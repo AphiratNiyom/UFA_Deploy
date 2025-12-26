@@ -1,0 +1,125 @@
+from pathlib import Path
+import os
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+# Quick-start development settings - unsuitable for production
+# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = 'django-insecure-!)du$b&m06=2$pz@7n1uz6ma5)xq)xltdpe#w!)o_-@zr!w9rh'
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = True
+
+#ALLOWED_HOSTS = ['15a6e965a43d.ngrok-free.app', 'localhost', '127.0.0.1']
+# สำหรับใช้ตอนพัฒนาเท่านั้น!
+ALLOWED_HOSTS = ['*']
+#   ครั้งที่คุณรีสตาร์ท ngrok เราจะได้ URL ใหม่ที่ไม่ซ้ำเดิม จะต้องกลับมาอัปเดตค่านี้ใน ALLOWED_HOSTS ทุกครั้ง
+#   เพื่อความสะดวกในช่วงพัฒนาสามารถใช้เครื่องหมาย * (ดอกจัน) เพื่ออนุญาตทุก Host ได้ แต่ไม่แนะนำให้ใช้ตอนนำไปใช้งานจริง เพราะไม่ปลอดภัย
+
+# Application definition
+
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'pages',
+]
+
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+ROOT_URLCONF = 'UFAsite.urls'
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = 'UFAsite.wsgi.application'
+
+
+# Database
+# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'ubon_flood_alert',            # <-- ชื่อฐานข้อมูลที่เราสร้างในขั้นตอนที่ 1
+        'USER': 'root',                         # <-- user ของ MySQL
+        'PASSWORD': 'Apirat2018',      # <-- **เปลี่ยนเป็นรหัสผ่าน root ของคุณ**
+        'HOST': '127.0.0.1',                    # <-- หรือ 'localhost'
+        'PORT': '3306',   
+    }
+}
+
+
+# Password validation
+# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
+
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
+
+
+# Internationalization
+# https://docs.djangoproject.com/en/5.2/topics/i18n/
+
+LANGUAGE_CODE = 'en-us'
+
+TIME_ZONE = 'Asia/Bangkok'
+
+USE_I18N = True
+
+USE_TZ = True
+
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/5.2/howto/static-files/
+
+STATIC_URL = 'static/'
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+# Default primary key field type
+# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# LINE BOT CONFIGURATION
+LINE_CHANNEL_ACCESS_TOKEN = 'dX4d0TaVaT+LYdOsf87JxmPVCZwTiFRuF5LLKOiTJlb3xJd726q5vdjchZqfMAdQNVsfuBf/IVL0eLRPcBq1xSAJ/sYuWVvcmrZaS8UKd4dciT9I75juk/W1XLaf6OMDyJLU8RtpONl9YGu7ZIej3gdB04t89/1O/w1cDnyilFU='
+LINE_CHANNEL_SECRET = 'dd13871dbe48900588ea526959bd8525'
