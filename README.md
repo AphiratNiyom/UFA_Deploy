@@ -10,6 +10,7 @@ Django web application for monitoring water levels (EGAT WaterTele), storing mea
 ## Key Features
 
 - Scrape latest water levels for EGAT stations (TS2/M.5, TS16/M.7, TS5/M.11B)
+- **Automated Data Updates:** Background scheduler (APScheduler) runs every 15 minutes to fetch new data automatically.
 - Persist data to MySQL
 - Rule-based risk evaluation by station thresholds
 - LINE Messaging integration: subscribe/unsubscribe, quick replies to query station status, emergency contacts Flex Message
@@ -23,6 +24,7 @@ Django web application for monitoring water levels (EGAT WaterTele), storing mea
 - LINE Messaging API SDK: `line-bot-sdk`
 - ML training: `pandas`, `scikit-learn`, `joblib`
 - Optional tunneling: `ngrok`
+- Task Scheduling: `apscheduler`
 
 ## Project Structure (high level)
 
@@ -33,6 +35,7 @@ Django web application for monitoring water levels (EGAT WaterTele), storing mea
     - `management/commands/scrape_data.py` – scrape EGAT station data
     - `management/commands/train_model.py` – train & save ML model
     - `risk_calculator.py` – thresholds + rule-based risk evaluation
+    - `updater.py` – APScheduler configuration for background tasks
     - `utils.py` – LINE multicast helpers, etc.
     - `views.py` – home page + LINE webhook handlers
     - `urls.py` – routes (`/`, `/webhook/`)
@@ -103,7 +106,8 @@ For production, move these to environment variables and do not commit secrets.
 
 ## Data Flow
 
-- Scraper command: `python UFAsite\manage.py scrape_data`
+- **Automation:** The system automatically scrapes data every 15 minutes (at minute 02, 17, 32, 47) using `APScheduler` when the server is running.
+- Manual Scraper command: `python UFAsite\manage.py scrape_data` (for testing or immediate update)
   - Pulls stations TS2 (M.5), TS16 (M.7), TS5 (M.11B)
   - Parses `waterLV` and `date` from EGAT WaterTele AJAX (hidden inputs)
   - Converts BE to AD, stores to DB
