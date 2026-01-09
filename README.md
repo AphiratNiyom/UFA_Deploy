@@ -1,61 +1,85 @@
 # UFA Flood Alert (UFAsite)
 
-Django web application for monitoring water levels (EGAT WaterTele), storing measurements in MySQL, calculating flood risk, and sending LINE notifications.
+Django web application for monitoring water levels (EGAT WaterTele), storing measurements in MySQL, calculating flood risk, training a simple ML model, and sending LINE notifications.
 
-## Tech Stack
+## Project Location
+
+- Root path: `d:\Coding\Final Project`
+- Django manage script: `UFAsite\manage.py`
+
+## Key Features
+
+- Scrape latest water levels for EGAT stations (TS2/M.5, TS16/M.7, TS5/M.11B)
+- Persist data to MySQL
+- Rule-based risk evaluation by station thresholds
+- LINE Messaging integration: subscribe/unsubscribe, quick replies to query station status, emergency contacts Flex Message
+- Train a basic ML model (RandomForest) for risk_level prediction based on collected data
+
+## Tech Stack & Dependencies
 
 - Python / Django
-- MySQL
+- MySQL (django backend: `mysqlclient`)
 - Data scraping: `requests`, `beautifulsoup4`
-- Optional tunneling for webhooks/demo: `ngrok`
-- LINE Messaging API (multicast alerts)
+- LINE Messaging API SDK: `line-bot-sdk`
+- ML training: `pandas`, `scikit-learn`, `joblib`
+- Optional tunneling: `ngrok`
 
 ## Project Structure (high level)
 
 - `UFAsite/` – Django project root
   - `manage.py` – Django management entry point
   - `UFAsite/` – Django settings/urls/asgi/wsgi
-  - `pages/` – main app (models, views, risk logic, utilities)
-    - `management/commands/scrape_data.py` – custom command to scrape EGAT station data
-  - `templates/` – HTML templates
-  - `static/` – static assets (images/css/js)
+  - `pages/` – main app
+    - `management/commands/scrape_data.py` – scrape EGAT station data
+    - `management/commands/train_model.py` – train & save ML model
+    - `risk_calculator.py` – thresholds + rule-based risk evaluation
+    - `utils.py` – LINE multicast helpers, etc.
+    - `views.py` – home page + LINE webhook handlers
+    - `urls.py` – routes (`/`, `/webhook/`)
+  - `templates/` – HTML templates (e.g., `home.html`)
+  - `static/` – static assets
+- `คำสั่งในการใช้งาน.txt` – Thai quick usage notes
 
-## Prerequisites
+## Endpoints
 
-- Python 3.x
-- MySQL Server running locally (default config in this repo uses `127.0.0.1:3306`)
-- (Recommended) virtual environment
+- `GET /` – Home page showing latest levels for TS2 (M.5), TS16 (M.7), TS5 (M.11B)
+- `POST /webhook/` – LINE webhook endpoint
 
-## Setup
-
-### 1) Create & activate a virtual environment
-
-Windows (cmd/PowerShell):
+## Quick Start (Windows)
 
 ```bat
+cd /d d:\Coding\Final Project
 python -m venv venv
 venv\Scripts\activate
-```
 
-### 2) Install dependencies
-
-If you already have a `requirements.txt`, install from it:
-
-```bat
+:: Install dependencies (use requirements.txt if present)
 pip install -r requirements.txt
+:: If you do not have requirements.txt:
+pip install django mysqlclient requests beautifulsoup4 line-bot-sdk pandas scikit-learn joblib
 ```
 
-If you **do not** have a `requirements.txt`, install the typical dependencies used by this project:
+Create DB and apply migrations:
+
+```sql
+-- In MySQL
+CREATE DATABASE ubon_flood_alert CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
 
 ```bat
-pip install django mysqlclient requests beautifulsoup4
+python UFAsite\manage.py migrate
 ```
 
-> Note: `mysqlclient` may require build tools on Windows. If you run into issues, install the appropriate Visual C++ build tools or use an alternative MySQL driver and update Django `DATABASES` accordingly.
+Run the development server:
 
-### 3) Configure the database
+```bat
+python UFAsite\manage.py runserver
+```
 
-This project is configured for MySQL in `UFAsite/UFAsite/settings.py`:
+Open: http://127.0.0.1:8000/
+
+## Configuration
+
+Database (`UFAsite/UFAsite/settings.py`):
 
 ```python
 DATABASES = {
@@ -70,78 +94,100 @@ DATABASES = {
 }
 ```
 
-Create the database in MySQL:
-
-```sql
-CREATE DATABASE ubon_flood_alert CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-Then apply migrations:
-
-```bat
-python UFAsite\manage.py migrate
-```
-
-### 4) Configure LINE Messaging API (optional)
-
-LINE credentials are currently stored in `UFAsite/UFAsite/settings.py`:
+LINE Messaging API (used in `pages.views`):
 
 - `LINE_CHANNEL_ACCESS_TOKEN`
 - `LINE_CHANNEL_SECRET`
 
-For security, prefer moving these to environment variables for real deployments.
+For production, move these to environment variables and do not commit secrets.
 
-## Running the App
+## Data Flow
 
-From the repository root:
+- Scraper command: `python UFAsite\manage.py scrape_data`
+  - Pulls stations TS2 (M.5), TS16 (M.7), TS5 (M.11B)
+  - Parses `waterLV` and `date` from EGAT WaterTele AJAX (hidden inputs)
+  - Converts BE to AD, stores to DB
+  - Evaluates risk via `evaluate_flood_risk`
+  - Sends multicast alert for TS16 when `risk_level > 0`
+- Home page (`/`) queries the latest record per station and displays status
 
-```bat
-python UFAsite\manage.py runserver
-```
+## Machine Learning Model
 
-Open:
-
-- http://127.0.0.1:8000/
-
-## Key Commands (used in this project)
-
-Activate venv:
+- Training command:
 
 ```bat
-venv\Scripts\activate
+python UFAsite\manage.py train_model
 ```
 
-Scrape and store water level data (custom management command):
+- What it does:
+  - Loads water level data from DB (uses features like `water_level`, target `risk_level`)
+  - Splits data (train/test), trains `RandomForestClassifier`
+  - Prints accuracy on the test split
+  - Saves model to: `UFAsite\pages\predictor_model.joblib`
 
-```bat
-python UFAsite\manage.py scrape_data
-```
+- Requirements: `pandas`, `scikit-learn`, `joblib`
+- Needs at least a few rows of data in `WaterLevels` to train (command will stop if insufficient)
 
-Run tests for the `pages` app:
+## LINE Bot Usage
 
-```bat
-python UFAsite\manage.py test pages
-```
+- Webhook: `/webhook/`
+- Supported messages:
+  - `รับการแจ้งเตือน` – subscribe
+  - `ยกเลิกการแจ้งเตือน` – unsubscribe
+  - `สถานะน้ำ` / `สถานะน้ำปัจจุบัน` / `ดูระดับน้ำ` – show Quick Reply to choose a station
+  - `ดู M.5` / `ดู M.7` / `ดู M.11B` – return the latest status for that station
+  - `ข้อมูลติดต่อฉุกเฉิน` – send Flex Message with emergency contacts
 
-Run ngrok (to expose port 8000):
+Expose webhook locally:
 
 ```bat
 ngrok http 8000
 ```
 
-## Scraping & Risk Evaluation Notes
+Use ngrok HTTPS URL + `/webhook/` in LINE developer console. During development `ALLOWED_HOSTS = ['*']` is set; restrict in production.
 
-- The scraper pulls station data from EGAT WaterTele using an AJAX endpoint and parses hidden `<input>` values such as `waterLV` and `date`.
-- Risk is evaluated via `pages/risk_calculator.py`.
-- Alerts (when enabled) are sent via `pages/utils.py` (multicast) and are currently triggered only for station `TS16` when `risk_level > 0`.
+## Common Commands
+
+```bat
+:: Activate venv
+cd /d d:\Coding\Final Project
+venv\Scripts\activate
+
+:: Run server
+python UFAsite\manage.py runserver
+
+:: Scrape data
+python UFAsite\manage.py scrape_data
+
+:: Train ML model
+python UFAsite\manage.py train_model
+
+:: Run tests for pages app
+python UFAsite\manage.py test pages
+
+:: Expose locally
+ngrok http 8000
+```
 
 ## Security Notes
 
-This repository currently contains sensitive values in source control (e.g., Django `SECRET_KEY`, MySQL password, LINE tokens). For production:
+- Do not commit secrets (Django `SECRET_KEY`, DB password, LINE tokens)
+- Set `DEBUG = False` and restrict `ALLOWED_HOSTS` for production
+- Prefer environment variables or a secrets manager
 
-- Move secrets to environment variables or a secret manager
-- Restrict `ALLOWED_HOSTS` (do not use `'*'`)
-- Disable `DEBUG`
+## Troubleshooting
+
+- `mysqlclient` on Windows may require Microsoft Visual C++ Build Tools
+- If webhook returns `403` or signature errors, verify `LINE_CHANNEL_SECRET` and request signatures
+- If ngrok URL changes, update LINE webhook URL
+
+## สรุปคำสั่งใช้งาน (ภาษาไทย)
+
+- เปิดสภาพแวดล้อม: `venv\Scripts\activate`
+- ดึงข้อมูล: `python UFAsite\manage.py scrape_data`
+- เทสระบบ: `python UFAsite\manage.py test pages`
+- ฝึกสอนโมเดล: `python UFAsite\manage.py train_model`
+- เปิดเผยพอร์ตผ่านอินเทอร์เน็ต: `ngrok http 8000`
 
 ## License
 
