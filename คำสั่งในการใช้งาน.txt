@@ -1,0 +1,6 @@
+คำสั่งที่ใช้ในโปรเจคนี้
+
+เปิดสภาพแวดล้อม = venv\Scripts\activate
+ดึงข้อมูล = python manage.py scrape_data
+รัน ngrok = ngrok http 8000
+เทสระบบประเมิณความเสี่ยง = python manage.py test pages
