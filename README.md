@@ -14,7 +14,7 @@ Django web application for monitoring water levels (EGAT WaterTele), storing mea
 - Persist data to MySQL
 - Rule-based risk evaluation by station thresholds
 - LINE Messaging integration: subscribe/unsubscribe, quick replies to query station status, emergency contacts Flex Message
-- Train a basic ML model (RandomForest) for risk_level prediction based on collected data
+- Train a basic ML model (Linear Regression) for water level prediction (6-hour forecast) based on collected data
 
 ## Tech Stack & Dependencies
 
@@ -125,9 +125,9 @@ python UFAsite\manage.py train_model
 
 - What it does:
   - Loads water level data from DB (uses features like `water_level`, target `risk_level`)
-  - Splits data (train/test), trains `RandomForestClassifier`
-  - Prints accuracy on the test split
-  - Saves model to: `UFAsite\pages\predictor_model.joblib`
+  - Creates lagged features (1h, 2h, 3h) from stations TS2, TS16, TS5
+  - Trains `LinearRegression` to predict TS16 water level 6 hours ahead
+  - Saves model to: `trained_model.joblib`
 
 - Requirements: `pandas`, `scikit-learn`, `joblib`
 - Needs at least a few rows of data in `WaterLevels` to train (command will stop if insufficient)
