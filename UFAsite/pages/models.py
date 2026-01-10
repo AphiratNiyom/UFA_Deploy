@@ -5,7 +5,7 @@ class WaterStations(models.Model):
     station_name = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'water_stations'
 
 class WaterLevels(models.Model):
@@ -17,7 +17,7 @@ class WaterLevels(models.Model):
     station = models.ForeignKey(WaterStations, models.DO_NOTHING, db_column='station_id')
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'water_levels'
 
 class Users(models.Model):
@@ -27,7 +27,7 @@ class Users(models.Model):
     registered_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'users'
 
 def __str__(self):
