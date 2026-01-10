@@ -18,7 +18,8 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-!)du$b&m06=2$pz@7n1uz
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+# อนุญาตให้เข้าถึงจากโดเมนของ Render และ localhost
+ALLOWED_HOSTS = ['ufa-deploy.onrender.com', 'localhost', '127.0.0.1']
 
 # Application definition
 
