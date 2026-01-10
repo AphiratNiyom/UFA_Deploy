@@ -66,20 +66,19 @@ WSGI_APPLICATION = 'UFAsite.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 if 'RENDER' in os.environ:
-    # ตั้งค่าสำหรับ TiDB บน Production (Render)
+    import ssl
+    
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
             'NAME': os.environ.get('TIDB_DATABASE', 'test'),
-            'USER': os.environ.get('TIDB_USER'),  # ชื่อตัวแปร ไม่ใช่ค่าจริง
-            'PASSWORD': os.environ.get('TIDB_PASSWORD'),  # ชื่อตัวแปร ไม่ใช่ค่าจริง
-            'HOST': os.environ.get('TIDB_HOST'),  # ชื่อตัวแปร ไม่ใช่ค่าจริง
+            'USER': os.environ.get('TIDB_USER'),
+            'PASSWORD': os.environ.get('TIDB_PASSWORD'),
+            'HOST': os.environ.get('TIDB_HOST'),
             'PORT': os.environ.get('TIDB_PORT', '4000'),
             'OPTIONS': {
                 'charset': 'utf8mb4',
-                'ssl': {
-                    'ssl_disabled': False,
-                },
+                'ssl': {'ssl_mode': 'REQUIRED'},
                 'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
             },
         }
