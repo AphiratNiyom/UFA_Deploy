@@ -11,16 +11,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-!)du$b&m06=2$pz@7n1uz6ma5)xq)xltdpe#w!)o_-@zr!w9rh'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-!)du$b&m06=2$pz@7n1uz6ma5)xq)xltdpe#w!)o_-@zr!w9rh')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-#ALLOWED_HOSTS = ['15a6e965a43d.ngrok-free.app', 'localhost', '127.0.0.1']
-# สำหรับใช้ตอนพัฒนาเท่านั้น!
-ALLOWED_HOSTS = ['*']
-#   ครั้งที่คุณรีสตาร์ท ngrok เราจะได้ URL ใหม่ที่ไม่ซ้ำเดิม จะต้องกลับมาอัปเดตค่านี้ใน ALLOWED_HOSTS ทุกครั้ง
-#   เพื่อความสะดวกในช่วงพัฒนาสามารถใช้เครื่องหมาย * (ดอกจัน) เพื่ออนุญาตทุก Host ได้ แต่ไม่แนะนำให้ใช้ตอนนำไปใช้งานจริง เพราะไม่ปลอดภัย
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 
 # Application definition
 
@@ -36,13 +32,13 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # ย้ายขึ้นมาหลัง SecurityMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 ROOT_URLCONF = 'UFAsite.urls'
@@ -70,33 +66,33 @@ WSGI_APPLICATION = 'UFAsite.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 if 'RENDER' in os.environ:
-    # ตั้งค่าสำหรับ TiDB
+    # ตั้งค่าสำหรับ TiDB บน Production (Render)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'NAME': os.environ.get('DB_NAME', 'test'), # ใส่ชื่อ DB ใน Environment ของ Render
-            'USER': os.environ.get('3zWLudYdjL5aPtv.root'),
-            'PASSWORD': os.environ.get('qICNzoVj9digah6z'),
-            'HOST': os.environ.get('gateway01.ap-southeast-1.prod.aws.tidbcloud.com'),
-            'PORT': '4000',
+            'NAME': os.environ.get('TIDB_DATABASE', 'test'),
+            'USER': os.environ.get('TIDB_USER'),  # ชื่อตัวแปร ไม่ใช่ค่าจริง
+            'PASSWORD': os.environ.get('TIDB_PASSWORD'),  # ชื่อตัวแปร ไม่ใช่ค่าจริง
+            'HOST': os.environ.get('TIDB_HOST'),  # ชื่อตัวแปร ไม่ใช่ค่าจริง
+            'PORT': os.environ.get('TIDB_PORT', '4000'),
             'OPTIONS': {
-                'ssl': {'ca': '/etc/ssl/certs/ca-certificates.crt'} # จำเป็นสำหรับ TiDB
+                'charset': 'utf8mb4',
+                'ssl': {
+                    'ssl_disabled': False,
+                },
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
             },
         }
     }
-    
-    # ความปลอดภัยอื่นๆ บน Production
-    DEBUG = False
-    ALLOWED_HOSTS = ['your-app-name.onrender.com'] # ใส่ชื่อเว็บที่คุณจะได้จาก Render
-
 else: 
+    # ตั้งค่าสำหรับ Local Development
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'ubon_flood_alert',            # <-- ชื่อฐานข้อมูลที่เราสร้างในขั้นตอนที่ 1
-            'USER': 'root',                         # <-- user ของ MySQL
-            'PASSWORD': 'Apirat2018',      # <-- **เปลี่ยนเป็นรหัสผ่าน root ของคุณ**
-            'HOST': '127.0.0.1',                    # <-- หรือ 'localhost'
+            'NAME': 'ubon_flood_alert',
+            'USER': 'root',
+            'PASSWORD': 'Apirat2018',
+            'HOST': '127.0.0.1',
             'PORT': '3306',   
         }
     }
@@ -141,11 +137,20 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
+# WhiteNoise configuration
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # LINE BOT CONFIGURATION
-LINE_CHANNEL_ACCESS_TOKEN = 'dX4d0TaVaT+LYdOsf87JxmPVCZwTiFRuF5LLKOiTJlb3xJd726q5vdjchZqfMAdQNVsfuBf/IVL0eLRPcBq1xSAJ/sYuWVvcmrZaS8UKd4dciT9I75juk/W1XLaf6OMDyJLU8RtpONl9YGu7ZIej3gdB04t89/1O/w1cDnyilFU='
-LINE_CHANNEL_SECRET = 'dd13871dbe48900588ea526959bd8525'
+LINE_CHANNEL_ACCESS_TOKEN = os.environ.get('LINE_CHANNEL_ACCESS_TOKEN', 'dX4d0TaVaT+LYdOsf87JxmPVCZwTiFRuF5LLKOiTJlb3xJd726q5vdjchZqfMAdQNVsfuBf/IVL0eLRPcBq1xSAJ/sYuWVvcmrZaS8UKd4dciT9I75juk/W1XLaf6OMDyJLU8RtpONl9YGu7ZIej3gdB04t89/1O/w1cDnyilFU=')
+LINE_CHANNEL_SECRET = os.environ.get('LINE_CHANNEL_SECRET', 'dd13871dbe48900588ea526959bd8525')
+
+# Security settings for production
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
