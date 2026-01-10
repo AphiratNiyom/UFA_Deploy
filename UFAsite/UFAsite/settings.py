@@ -1,5 +1,7 @@
 from pathlib import Path
 import os
+import dj_database_url
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -12,7 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-!)du$b&m06=2$pz@7n1uz6ma5)xq)xltdpe#w!)o_-@zr!w9rh'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 #ALLOWED_HOSTS = ['15a6e965a43d.ngrok-free.app', 'localhost', '127.0.0.1']
 # สำหรับใช้ตอนพัฒนาเท่านั้น!
@@ -66,16 +68,37 @@ WSGI_APPLICATION = 'UFAsite.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'ubon_flood_alert',            # <-- ชื่อฐานข้อมูลที่เราสร้างในขั้นตอนที่ 1
-        'USER': 'root',                         # <-- user ของ MySQL
-        'PASSWORD': 'Apirat2018',      # <-- **เปลี่ยนเป็นรหัสผ่าน root ของคุณ**
-        'HOST': '127.0.0.1',                    # <-- หรือ 'localhost'
-        'PORT': '3306',   
+if 'RENDER' in os.environ:
+    # ตั้งค่าสำหรับ TiDB
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.environ.get('DB_NAME', 'test'), # ใส่ชื่อ DB ใน Environment ของ Render
+            'USER': os.environ.get('3zWLudYdjL5aPtv.root'),
+            'PASSWORD': os.environ.get('qICNzoVj9digah6z'),
+            'HOST': os.environ.get('gateway01.ap-southeast-1.prod.aws.tidbcloud.com'),
+            'PORT': '4000',
+            'OPTIONS': {
+                'ssl': {'ca': '/etc/ssl/certs/ca-certificates.crt'} # จำเป็นสำหรับ TiDB
+            },
+        }
     }
-}
+    
+    # ความปลอดภัยอื่นๆ บน Production
+    DEBUG = False
+    ALLOWED_HOSTS = ['your-app-name.onrender.com'] # ใส่ชื่อเว็บที่คุณจะได้จาก Render
+
+else: 
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'ubon_flood_alert',            # <-- ชื่อฐานข้อมูลที่เราสร้างในขั้นตอนที่ 1
+            'USER': 'root',                         # <-- user ของ MySQL
+            'PASSWORD': 'Apirat2018',      # <-- **เปลี่ยนเป็นรหัสผ่าน root ของคุณ**
+            'HOST': '127.0.0.1',                    # <-- หรือ 'localhost'
+            'PORT': '3306',   
+        }
+    }
 
 
 # Password validation
