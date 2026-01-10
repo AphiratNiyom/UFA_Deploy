@@ -78,7 +78,9 @@ if 'RENDER' in os.environ:
             'PORT': os.environ.get('TIDB_PORT', '4000'),
             'OPTIONS': {
                 'charset': 'utf8mb4',
-                'ssl': {'ssl_mode': 'REQUIRED'},
+                'ssl_verify_cert': False,
+                'ssl_verify_identity': False,
+                'ssl': True,
                 'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
             },
         }
