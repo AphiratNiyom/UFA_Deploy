@@ -195,4 +195,4 @@ ngrok http 8000
 
 ## License
 
-Add your license information here.
+By Aphirat Niyom & Gemini
