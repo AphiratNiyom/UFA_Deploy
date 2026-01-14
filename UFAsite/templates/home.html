@@ -5,89 +5,127 @@
 
 <div class="d-flex flex-column min-vh-100">
 
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark navbar-glass fixed-top mb-5">
     <div class="container">
-      <a class="navbar-brand fw-bold" href="#">🌊 UFA</a>
-      <span class="navbar-text text-white">
-        ระบบเตือนภัยน้ำท่วมอุบลราชธานี
+      <a class="navbar-brand fw-bold d-flex align-items-center" href="#">
+        <i class="bi bi-tsunami me-2 fs-4"></i> UFA Alert
+      </a>
+      <span class="navbar-text text-white-50 small d-none d-md-block">
+        ระบบเตือนภัยน้ำท่วมอุบลราชธานี (Ubon Flood Alert)
       </span>
     </div>
   </nav>
 
-  <main class="container my-5 flex-grow-1">
-    
-    <div class="text-center mb-5">
-      <h1 class="fw-bold display-5">สถานการณ์น้ำปัจจุบัน</h1>
-      <p class="text-muted">ข้อมูลอัปเดตล่าสุด: {% now "d/m/Y H:i" %} น.</p>
+  <main class="container flex-grow-1" style="margin-top: 100px;">
+
+    <!-- Hero Header -->
+    <div class="text-center mb-5 fade-in-up">
+      <h1 class="fw-bold display-4 text-white text-shadow">สถานการณ์น้ำปัจจุบัน</h1>
+      <div
+        class="d-inline-flex align-items-center bg-white bg-opacity-25 backdrop-blur rounded-pill px-4 py-2 mt-2 text-white">
+        <i class="bi bi-clock-history me-2"></i>
+        <span>อัปเดตล่าสุด: {% now "d/m/Y H:i" %} น.</span>
+      </div>
     </div>
 
+    <!-- Station Cards Row -->
     <div class="row g-4 justify-content-center">
 
+      <!-- Station M.5 -->
       <div class="col-md-4">
-        <div class="card h-100 shadow-sm text-center">
-          <div class="card-header bg-transparent fw-bold text-muted">ต้นน้ำ: อ.ราษีไศล (M.5)</div>
-          <div class="card-body py-4">
+        <div class="card glass-card h-100 text-center border-0">
+          <div class="card-header glass-header py-3 text-secondary">
+            ต้นน้ำ: อ.ราษีไศล (M.5)
+          </div>
+          <div class="card-body py-4 d-flex flex-column justify-content-center">
             {% if m5 %}
-              <h2 class="display-4 fw-bold mb-0">{{ m5.water_level }}</h2>
-              <small class="text-muted">เมตร (รทก.)</small>
-              <div class="mt-3">
-                {% if m5.risk_level == 0 %}
-                  <span class="badge rounded-pill bg-success px-3 py-2">🟢 ปกติ</span>
-                {% elif m5.risk_level == 1 %}
-                  <span class="badge rounded-pill bg-warning text-dark px-3 py-2">🟡 เฝ้าระวัง</span>
-                {% else %}
-                  <span class="badge rounded-pill bg-danger px-3 py-2">🔴 วิกฤต</span>
-                {% endif %}
-              </div>
+            <div class="display-3 water-level-text mb-2">{{ m5.water_level }}</div>
+            <small class="text-secondary fw-bold">เมตร (รทก.)</small>
+            <div class="mt-4">
+              {% if m5.risk_level == 0 %}
+              <span class="badge rounded-pill bg-success badge-glass px-3 py-2">
+                <i class="bi bi-check-circle-fill me-1"></i> ปกติ
+              </span>
+              {% elif m5.risk_level == 1 %}
+              <span class="badge rounded-pill bg-warning text-dark badge-glass px-3 py-2">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i> เฝ้าระวัง
+              </span>
+              {% else %}
+              <span class="badge rounded-pill bg-danger badge-glass px-3 py-2">
+                <i class="bi bi-exclamation-octagon-fill me-1"></i> วิกฤต
+              </span>
+              {% endif %}
+            </div>
             {% else %}
-              <p class="text-muted py-4">รอข้อมูล...</p>
+            <div class="py-5 text-muted"><i class="bi bi-cloud-slash fs-1"></i><br>รอข้อมูล...</div>
             {% endif %}
           </div>
         </div>
       </div>
 
+      <!-- Station M.7 (Highlighted) -->
       <div class="col-md-4">
-        <div class="card h-100 shadow border-primary text-center">
-          <div class="card-header bg-primary text-white fw-bold">กลางน้ำ: เมืองอุบล (M.7)</div>
-          <div class="card-body py-4">
+        <div class="card glass-card h-100 text-center border-0" style="transform: scale(1.05);">
+          <div class="card-header glass-header py-3 text-primary fw-bold bg-white bg-opacity-50">
+            <i class="bi bi-geo-alt-fill"></i> กลางน้ำ: เมืองอุบล (M.7)
+          </div>
+          <div class="card-body py-5">
             {% if m7 %}
-              <h2 class="display-3 fw-bold text-primary mb-0">{{ m7.water_level }}</h2>
-              <small class="text-muted">เมตร (รทก.)</small>
-              <div class="mt-3">
-                {% if m7.risk_level == 0 %}
-                  <span class="badge rounded-pill bg-success px-4 py-2 fs-5">🟢 ปกติ</span>
-                {% elif m7.risk_level == 1 %}
-                  <span class="badge rounded-pill bg-warning text-dark px-4 py-2 fs-5">🟡 เฝ้าระวัง</span>
-                {% else %}
-                  <span class="badge rounded-pill bg-danger px-4 py-2 fs-5">🔴 วิกฤต</span>
-                {% endif %}
-              </div>
-              <p class="text-muted mt-2 small">อัปเดต: {{ m7.recorded_at|date:"H:i" }} น.</p>
+            <div class="display-1 water-level-text mb-0">{{ m7.water_level }}</div>
+            <small class="text-secondary fw-bold">เมตร (รทก.)</small>
+            <div class="mt-4">
+              {% if m7.risk_level == 0 %}
+              <span class="badge rounded-pill bg-success badge-glass px-4 py-2 fs-5">
+                <i class="bi bi-shield-check me-2"></i>ปกติ
+              </span>
+              {% elif m7.risk_level == 1 %}
+              <span class="badge rounded-pill bg-warning text-dark badge-glass px-4 py-2 fs-5">
+                <i class="bi bi-exclamation-triangle me-2"></i>เฝ้าระวัง
+              </span>
+              {% else %}
+              <span class="badge rounded-pill bg-danger badge-glass px-4 py-2 fs-5">
+                <i class="bi bi-megaphone-fill me-2"></i>วิกฤต
+              </span>
+              {% endif %}
+            </div>
+            <p class="text-secondary mt-3 small opacity-75">
+              <i class="bi bi-stopwatch"></i> ข้อมูลเวลา: {{ m7.recorded_at|date:"H:i" }} น.
+            </p>
             {% else %}
-              <p class="text-muted py-4">รอข้อมูล...</p>
+            <div class="py-5 text-muted"><i class="bi bi-cloud-slash fs-1"></i><br>รอข้อมูล...</div>
             {% endif %}
           </div>
         </div>
       </div>
 
+      <!-- Station M.11B -->
       <div class="col-md-4">
-        <div class="card h-100 shadow-sm text-center">
-          <div class="card-header bg-transparent fw-bold text-muted">ปลายน้ำ: แก่งสะพือ (M.11B)</div>
-          <div class="card-body py-4">
+        <div class="card glass-card h-100 text-center border-0">
+          <div class="card-header glass-header py-3 text-secondary">
+            ปลายน้ำ: แก่งสะพือ (M.11B)
+          </div>
+          <div class="card-body py-4 d-flex flex-column justify-content-center">
             {% if m11b %}
-              <h2 class="display-4 fw-bold mb-0">{{ m11b.water_level }}</h2>
-              <small class="text-muted">เมตร (รทก.)</small>
-              <div class="mt-3">
-                {% if m11b.risk_level == 0 %}
-                  <span class="badge rounded-pill bg-success px-3 py-2">🟢 ปกติ</span>
-                {% elif m11b.risk_level == 1 %}
-                  <span class="badge rounded-pill bg-warning text-dark px-3 py-2">🟡 เฝ้าระวัง</span>
-                {% else %}
-                  <span class="badge rounded-pill bg-danger px-3 py-2">🔴 วิกฤต</span>
-                {% endif %}
-              </div>
+            <div class="display-3 water-level-text mb-2">{{ m11b.water_level }}</div>
+            <small class="text-secondary fw-bold">เมตร (รทก.)</small>
+            <div class="mt-4">
+              {% if m11b.risk_level == 0 %}
+              <span class="badge rounded-pill bg-success badge-glass px-3 py-2">
+                <i class="bi bi-check-circle-fill me-1"></i> ปกติ
+              </span>
+              {% elif m11b.risk_level == 1 %}
+              <span class="badge rounded-pill bg-warning text-dark badge-glass px-3 py-2">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i> เฝ้าระวัง
+              </span>
+              {% else %}
+              <span class="badge rounded-pill bg-danger badge-glass px-3 py-2">
+                <i class="bi bi-exclamation-octagon-fill me-1"></i> วิกฤต
+              </span>
+              {% endif %}
+            </div>
             {% else %}
-              <p class="text-muted py-4">รอข้อมูล...</p>
+            <div class="py-5 text-muted"><i class="bi bi-cloud-slash fs-1"></i><br>รอข้อมูล...</div>
             {% endif %}
           </div>
         </div>
@@ -95,19 +133,23 @@
 
     </div>
 
-    <div class="row mt-5 justify-content-center">
+    <!-- LINE Alert Section -->
+    <div class="row mt-5 justify-content-center pb-5">
       <div class="col-md-8">
-        <div class="card bg-success-subtle border-success">
+        <div class="card glass-card border-0">
           <div class="card-body d-flex flex-column flex-md-row align-items-center justify-content-between p-4">
-            <div class="mb-3 mb-md-0">
-              <h4 class="fw-bold text-success"><i class="bi bi-line"></i> ติดตามการแจ้งเตือนและรายละเอียดเพิ่มเติมผ่าน LINE</h4>
-              <p class="mb-0 text-muted">รับข่าวน้ำท่วมส่งตรงถึงมือถือคุณทันที</p>
+            <div class="mb-3 mb-md-0 text-center text-md-start">
+              <h4 class="fw-bold text-dark mb-1">
+                <i class="bi bi-line text-success fs-3 align-middle me-2"></i>
+                รับการแจ้งเตือนผ่าน LINE
+              </h4>
+              <p class="mb-0 text-secondary">ไม่พลาดทุกข่าวสารระดับน้ำ ส่งตรงถึงมือถือคุณ 24 ชม.</p>
             </div>
             <div class="text-center">
-               <br>
-               <a href="https://line.me/ti/p/@046szerj" target="_blank" class="btn btn-success fw-bold px-4">
-                 แอดเพื่อนเลย
-               </a>
+              <a href="https://line.me/ti/p/@046szerj" target="_blank"
+                class="btn btn-success rounded-pill fw-bold px-5 py-2 shadow-sm">
+                <i class="bi bi-person-plus-fill me-2"></i>แอดเพื่อนเลย
+              </a>
             </div>
           </div>
         </div>
@@ -116,5 +158,12 @@
 
   </main>
 </div>
+
+<style>
+  /* Extra utility to force text shadow on dark background */
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+</style>
 
 {% endblock %}

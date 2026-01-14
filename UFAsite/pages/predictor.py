@@ -52,7 +52,6 @@ def _prepare_dataframe(df_raw):
 
 def train_and_save_model():
     """Fetches data, trains a new model, and saves it."""
-    # (ส่วนนี้เหมือนเดิมครับ)
     print("🔄 Starting model training process...")
     qs = WaterLevels.objects.all().values('recorded_at', 'station__station_id', 'water_level')
     if not qs.exists(): return None
@@ -112,8 +111,8 @@ def load_and_predict():
     ts16_now = input_vector['TS16'].values[0]
     ts5_now = input_vector['TS5'].values[0]
 
-# ====================================================
-    # 🛡️ HYBRID SYSTEM: RULE-BASED CHECKS (UPDATED)
+    # ====================================================
+    # HYBRID SYSTEM: RULE-BASED CHECKS (UPDATED)
     # ====================================================
     
     warnings = []
@@ -140,7 +139,7 @@ def load_and_predict():
     print(f"DEBUG: TS16={ts16_now}, Diff={diff}, TriggerLevel={BACKWATER_LEVEL_TRIGGER}")
 
     # ====================================================
-    # 🤖 AI PREDICTION
+    # AI PREDICTION
     # ====================================================
     
     predicted_level = model.predict(input_vector)[0]

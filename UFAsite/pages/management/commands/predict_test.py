@@ -4,8 +4,10 @@ import sys
 import os
 
 
-# ตั้งค่าเพื่อให้ Python หาไฟล์ในโฟลเดอร์ pages เจอ
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# ตั้งค่าเพื่อให้ Python หาไฟล์ in project root
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(BASE_DIR)
+# sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.linear_model import LinearRegression
@@ -267,4 +269,6 @@ plt.ylabel('Water Level (m)')
 plt.legend(loc='upper left')
 plt.grid(True, which='both', linestyle='--', linewidth=0.5)
 plt.tight_layout()
+# plt.savefig('prediction_result.png')
+# print("✅ Graph saved to prediction_result.png")
 plt.show()

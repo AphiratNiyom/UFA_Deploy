@@ -16,10 +16,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-!)du$b&m06=2$pz@7n1uz6ma5)xq)xltdpe#w!)o_-@zr!w9rh')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+#DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG = True
 
 # อนุญาตให้เข้าถึงจากโดเมนของ Render และ localhost
-ALLOWED_HOSTS = ['ufa-deploy.onrender.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['ufa-deploy.onrender.com', 'localhost', '127.0.0.1', '*']
 
 # Application definition
 

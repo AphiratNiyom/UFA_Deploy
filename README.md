@@ -34,14 +34,14 @@ Django web application for monitoring water levels (EGAT WaterTele), storing mea
   - `pages/` – main app
     - `management/commands/scrape_data.py` – scrape EGAT station data
     - `management/commands/train_model.py` – train & save ML model
+    - `management/commands/simulation.py` – **NEW** flood simulation & visual test
     - `risk_calculator.py` – thresholds + rule-based risk evaluation
     - `updater.py` – APScheduler configuration for background tasks
     - `utils.py` – LINE multicast helpers, etc.
     - `views.py` – home page + LINE webhook handlers
     - `urls.py` – routes (`/`, `/webhook/`)
   - `templates/` – HTML templates (e.g., `home.html`)
-  - `static/` – static assets
-- `คำสั่งในการใช้งาน.txt` – Thai quick usage notes
+  - `static/` – static assets (CSS/JS)
 
 ## Endpoints
 
