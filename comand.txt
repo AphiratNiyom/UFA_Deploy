@@ -1,6 +1,22 @@
 คำสั่งที่ใช้ในโปรเจคนี้
 
-เปิดสภาพแวดล้อม = venv\Scripts\activate
-ดึงข้อมูล = python manage.py scrape_data
-รัน ngrok = ngrok http 8000
-เทสระบบประเมิณความเสี่ยง = python manage.py test pages
+1. เปิดสภาพแวดล้อม:
+   venv\Scripts\activate
+
+2. รันเซิร์ฟเวอร์ (Run Server):
+   python UFAsite\manage.py runserver
+
+3. ดึงข้อมูล (Scrape Data):
+   python UFAsite\manage.py scrape_data
+
+4. จำลองน้ำท่วม (Simulation):
+   python UFAsite\manage.py simulation
+
+5. เทสระบบประเมินความเสี่ยง:
+   python UFAsite\manage.py test pages
+
+6. เปิดเผยพอร์ตผ่านอินเทอร์เน็ต (Ngrok):
+   ngrok http 8000
+
+7. เทสระบบทำนายน้ำท่วม (predict_test):
+   python UFAsite\manage.py predict_test
