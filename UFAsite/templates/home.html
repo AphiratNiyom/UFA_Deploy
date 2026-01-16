@@ -9,7 +9,7 @@
   <nav class="navbar navbar-expand-lg navbar-dark navbar-glass fixed-top mb-5">
     <div class="container">
       <a class="navbar-brand fw-bold d-flex align-items-center" href="#">
-        <i class="bi bi-tsunami me-2 fs-4"></i> UFA Alert
+        <i class="bi bi-tsunami me-2 fs-4"></i> UFA
       </a>
       <span class="navbar-text text-white-50 small d-none d-md-block">
         ระบบเตือนภัยน้ำท่วมอุบลราชธานี (Ubon Flood Alert)
@@ -25,7 +25,7 @@
       <div
         class="d-inline-flex align-items-center bg-white bg-opacity-25 backdrop-blur rounded-pill px-4 py-2 mt-2 text-white">
         <i class="bi bi-clock-history me-2"></i>
-        <span>อัปเดตล่าสุด: {% now "d/m/Y H:i" %} น.</span>
+        <span>อัปเดตล่าสุด: <span id="last-update-time">{% now "d/m/Y H:i" %}</span> น.</span>
       </div>
     </div>
 
@@ -40,9 +40,9 @@
           </div>
           <div class="card-body py-4 d-flex flex-column justify-content-center">
             {% if m5 %}
-            <div class="display-3 water-level-text mb-2">{{ m5.water_level }}</div>
+            <div class="display-3 water-level-text mb-2" id="m5-level">{{ m5.water_level }}</div>
             <small class="text-secondary fw-bold">เมตร (รทก.)</small>
-            <div class="mt-4">
+            <div class="mt-4" id="m5-risk-container">
               {% if m5.risk_level == 0 %}
               <span class="badge rounded-pill bg-success badge-glass px-3 py-2">
                 <i class="bi bi-check-circle-fill me-1"></i> ปกติ
@@ -72,9 +72,9 @@
           </div>
           <div class="card-body py-5">
             {% if m7 %}
-            <div class="display-1 water-level-text mb-0">{{ m7.water_level }}</div>
+            <div class="display-1 water-level-text mb-0" id="m7-level">{{ m7.water_level }}</div>
             <small class="text-secondary fw-bold">เมตร (รทก.)</small>
-            <div class="mt-4">
+            <div class="mt-4" id="m7-risk-container">
               {% if m7.risk_level == 0 %}
               <span class="badge rounded-pill bg-success badge-glass px-4 py-2 fs-5">
                 <i class="bi bi-shield-check me-2"></i>ปกติ
@@ -90,7 +90,7 @@
               {% endif %}
             </div>
             <p class="text-secondary mt-3 small opacity-75">
-              <i class="bi bi-stopwatch"></i> ข้อมูลเวลา: {{ m7.recorded_at|date:"H:i" }} น.
+              <i class="bi bi-stopwatch"></i> ข้อมูลเวลา: <span id="m7-time">{{ m7.recorded_at|date:"H:i" }}</span> น.
             </p>
             {% else %}
             <div class="py-5 text-muted"><i class="bi bi-cloud-slash fs-1"></i><br>รอข้อมูล...</div>
@@ -107,9 +107,9 @@
           </div>
           <div class="card-body py-4 d-flex flex-column justify-content-center">
             {% if m11b %}
-            <div class="display-3 water-level-text mb-2">{{ m11b.water_level }}</div>
+            <div class="display-3 water-level-text mb-2" id="m11b-level">{{ m11b.water_level }}</div>
             <small class="text-secondary fw-bold">เมตร (รทก.)</small>
-            <div class="mt-4">
+            <div class="mt-4" id="m11b-risk-container">
               {% if m11b.risk_level == 0 %}
               <span class="badge rounded-pill bg-success badge-glass px-3 py-2">
                 <i class="bi bi-check-circle-fill me-1"></i> ปกติ
@@ -159,11 +159,5 @@
   </main>
 </div>
 
-<style>
-  /* Extra utility to force text shadow on dark background */
-  .text-shadow {
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  }
-</style>
 
 {% endblock %}

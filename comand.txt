@@ -17,6 +17,3 @@
 
 6. เปิดเผยพอร์ตผ่านอินเทอร์เน็ต (Ngrok):
    ngrok http 8000
-
-7. เทสระบบทำนายน้ำท่วม (predict_test):
-   python UFAsite\manage.py predict_test

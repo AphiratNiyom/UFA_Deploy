@@ -73,7 +73,7 @@ if 'RENDER' in os.environ:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'NAME': os.environ.get('TIDB_DATABASE', 'test'),
+            'NAME': os.environ.get('TIDB_DATABASE', 'ubon_flood_alert'),
             'USER': os.environ.get('TIDB_USER'),
             'PASSWORD': os.environ.get('TIDB_PASSWORD'),
             'HOST': os.environ.get('TIDB_HOST'),
