@@ -18,14 +18,12 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         self.stdout.write(timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         
-        # Mapping: Internal Station ID -> ThaiWater API Station ID
-        # PMTS16 (M.7) = 1192241976
-        # PMTS2 (M.5) = 1192234696
-        # PMTS5 (M.11B) = 1192241972
-        STATION_MAPPING = {
-            '1192196943': 'TS16', # M.7 (New ID)
-            '1191964977': 'TS2',  # M.5 (New ID)
-            '1192196945': 'TS5',  # M.11B (New ID)
+        # Mapping: ThaiWater Station Code -> Internal Station ID
+        # Using Station Code (M.7, M.5, ...) is more stable than numeric IDs which change often
+        STATION_CODE_MAPPING = {
+            'M.7': 'TS16',
+            'M.5': 'TS2',
+            'M.11B': 'TS5',
         }
 
         api_url = "https://api-v3.thaiwater.net/api/v1/thaiwater30/public/waterlevel"
@@ -49,24 +47,29 @@ class Command(BaseCommand):
             found_count = 0
             
             for item in stations_data:
-                # API structure: item['id'] is the unique ID we found
-                tele_id = str(item.get('id', ''))
+                # Extract station info
+                # Code location: item['station']['tele_station_oldcode']
+                station_info = item.get('station', {})
+                station_code = station_info.get('tele_station_oldcode', '')
                 
-                if tele_id in STATION_MAPPING:
-                    station_id = STATION_MAPPING[tele_id]
+                # If code matches our target list
+                if station_code in STATION_CODE_MAPPING:
+                    internal_station_id = STATION_CODE_MAPPING[station_code]
+                    current_api_id = str(item.get('id', '')) # For logging
+                    
                     water_level_msl = item.get('waterlevel_msl')
                     
                     if water_level_msl is None:
-                        self.stdout.write(self.style.WARNING(f"⚠️ Data is None for {station_id}"))
+                        self.stdout.write(self.style.WARNING(f"⚠️ Data is None for {internal_station_id} ({station_code})"))
                         continue
 
                     try:
                         level = float(water_level_msl)
                     except ValueError:
-                        self.stdout.write(self.style.ERROR(f"❌ Invalid float value for {station_id}: {water_level_msl}"))
+                        self.stdout.write(self.style.ERROR(f"❌ Invalid float value for {internal_station_id}: {water_level_msl}"))
                         continue
 
-                    self.save_data(station_id, level)
+                    self.save_data(internal_station_id, level)
                     found_count += 1
             
             if found_count > 0:
