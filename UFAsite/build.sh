@@ -12,3 +12,6 @@ else
 fi
 python manage.py collectstatic --no-input
 python manage.py migrate
+
+# Create Superuser automatically (since Shell is unreliable on Free Tier)
+python manage.py ensure_superuser
