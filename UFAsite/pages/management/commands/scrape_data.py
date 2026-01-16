@@ -23,9 +23,9 @@ class Command(BaseCommand):
         # PMTS2 (M.5) = 1192234696
         # PMTS5 (M.11B) = 1192241972
         STATION_MAPPING = {
-            '1192241976': 'TS16',
-            '1192234696': 'TS2',
-            '1192241972': 'TS5',
+            '1192196943': 'TS16', # M.7 (New ID)
+            '1191964977': 'TS2',  # M.5 (New ID)
+            '1192196945': 'TS5',  # M.11B (New ID)
         }
 
         api_url = "https://api-v3.thaiwater.net/api/v1/thaiwater30/public/waterlevel"
