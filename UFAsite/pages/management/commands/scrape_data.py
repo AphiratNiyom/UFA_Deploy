@@ -10,130 +10,97 @@ from pages.risk_calculator import evaluate_flood_risk
 from django.utils.timezone import make_aware
 from pages.utils import send_multicast_alert
 import re
+from django.utils import timezone
 
 class Command(BaseCommand):
-    help = 'Scrapes real water level data directly from hidden input tags in the AJAX response.'
-
-    # กำหนดรายชื่อสถานีที่ต้องการดึงข้อมูล
-    STATIONS = [
-        {
-            'station_si': 16,
-            'station_id': 'TS16',
-            'station_name': 'สถานี TS16 แม่น้ำมูล เมืองอุบลราชธานี (M.7)'
-        },
-        
-        {
-             'station_si': 2,
-             'station_id': 'TS2',
-             'station_name': 'สถานี TS2 แม่น้ำมูล อ.ราษีไศล (M.5) จ.ศรีสะเกษ'
-        },
-
-        {
-             'station_si': 5,
-             'station_id': 'TS5',
-             'station_name': 'สถานีTS5 แม่น้ำมูล ท้ายแก่งสะพือ (M.11B) จ.อุบลราชธานี'
-        },
-    ]
+    help = 'Fetches water level data from ThaiWater API and saves to database'
 
     def handle(self, *args, **kwargs):
-        """ดึงข้อมูลจากทุกสถานี"""
-        for station_config in self.STATIONS:
-            self.scrape_station(station_config)
-
-    def scrape_station(self, station_config):
-        """ดึงข้อมูลจากสถานีเดียว"""
-        station_si = station_config['station_si']
-        station_id = station_config['station_id']
-        station_name = station_config['station_name']
+        self.stdout.write(timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         
-        # URL ที่ JavaScript ใช้ดึงข้อมูล
-        ajax_url = f'https://watertele.egat.co.th/srdpm/dataStation/ajx_teledata_right.php?stationSI={station_si}'
+        # Mapping: Internal Station ID -> ThaiWater API Station ID
+        # PMTS16 (M.7) = 1192241976
+        # PMTS2 (M.5) = 1192234696
+        # PMTS5 (M.11B) = 1192241972
+        STATION_MAPPING = {
+            '1192241976': 'TS16',
+            '1192234696': 'TS2',
+            '1192241972': 'TS5',
+        }
 
-        self.stdout.write(f'Scraping data from hidden inputs for {station_name}...')
-
+        api_url = "https://api-v3.thaiwater.net/api/v1/thaiwater30/public/waterlevel"
+        
         try:
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html, */*; q=0.01',
-                'Accept-Language': 'th-TH,th;q=0.9,en-US;q=0.8,en;q=0.7',
-                'Referer': 'https://watertele.egat.co.th/',
-                'X-Requested-With': 'XMLHttpRequest',
-                'Connection': 'keep-alive',
-            }
-            # verify=False help avoid SSL errors from some legacy gov servers
-            # timeout increased to 30s
-            response = requests.get(ajax_url, headers=headers, timeout=30, verify=False)
+            self.stdout.write("🔌 Connecting to ThaiWater API...")
+            response = requests.get(api_url, verify=False, timeout=30)
             response.raise_for_status()
-            response.encoding = 'windows-874'
-            soup = BeautifulSoup(response.text, 'html.parser')
-
-            # ดึงข้อมูลจาก <input type="hidden"> โดยตรง
-            # 1. ค้นหาระดับน้ำจาก <input id="waterLV">
-            water_level_input = soup.find('input', {'id': 'waterLV'})
-            if not water_level_input or 'value' not in water_level_input.attrs:
-                raise ValueError("Could not find the hidden input tag with id='waterLV'.")
+            data = response.json()
             
-            water_level = float(water_level_input['value'])
+            # The API returns a list of stations in 'data' or directly as a list
+            stations_data = []
+            if 'data' in data:
+                if isinstance(data['data'], list):
+                    stations_data = data['data']
+                elif 'waterlevel_data' in data['data']:
+                    stations_data = data['data']['waterlevel_data']
+            elif isinstance(data, list):
+                stations_data = data
 
-            # 2. ค้นหาวันที่/เวลาจาก <input id="date">
-            date_input = soup.find('input', {'id': 'date'})
-            if not date_input or 'value' not in date_input.attrs:
-                raise ValueError("Could not find the hidden input tag with id='date'.")
-
-            datetime_str = date_input['value'] # จะได้ '18-09-2568 23:00:00'
+            found_count = 0
             
-            # แปลง พ.ศ. เป็น ค.ศ.
-            date_part, time_part = datetime_str.split(' ')
-            day, month, year_be = date_part.split('-')
-            year_ad = int(year_be) - 543
-            
-            naive_time = datetime.strptime(f"{day}-{month}-{year_ad} {time_part}", '%d-%m-%Y %H:%M:%S')
-            recorded_time = make_aware(naive_time)
+            for item in stations_data:
+                # API structure: item['id'] is the unique ID we found
+                tele_id = str(item.get('id', ''))
+                
+                if tele_id in STATION_MAPPING:
+                    station_id = STATION_MAPPING[tele_id]
+                    water_level_msl = item.get('waterlevel_msl')
+                    
+                    if water_level_msl is None:
+                        self.stdout.write(self.style.WARNING(f"⚠️ Data is None for {station_id}"))
+                        continue
 
-            # ประเมินความเสี่ยงน้ำท่วม
-            risk_level, risk_text = evaluate_flood_risk(water_level, station_id=station_id)
-            self.stdout.write(f"Analyzed Risk: {risk_text} (Level: {water_level}m)")
+                    try:
+                        level = float(water_level_msl)
+                    except ValueError:
+                        self.stdout.write(self.style.ERROR(f"❌ Invalid float value for {station_id}: {water_level_msl}"))
+                        continue
 
-            # บันทึกข้อมูลลง DATABASE
-            station, created = WaterStations.objects.get_or_create(
-                station_id=station_id,
-                defaults={'station_name': station_name}
-            )
+                    self.save_data(station_id, level)
+                    found_count += 1
             
+            if found_count > 0:
+                 self.stdout.write(self.style.SUCCESS(f"✅ Successfully updated {found_count} stations."))
+            else:
+                 self.stdout.write(self.style.WARNING("⚠️ No target stations found in API response."))
+
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f'❌ API Error: {e}'))
+
+    def save_data(self, station_id, level):
+        try:
+            station = WaterStations.objects.get(station_id=station_id)
+            
+            # Risk Calculation
+            risk_level, risk_text = evaluate_flood_risk(level, station_id)
+            self.stdout.write(f"Analyzed Risk for {station_id}: {risk_text} (Level: {level}m)")
+
+            # Save to DB
             WaterLevels.objects.create(
                 station=station,
-                water_level=water_level,
-                recorded_at=recorded_time,
-                risk_level=risk_level
+                water_level=level,
+                risk_level=risk_level,
+                recorded_at=timezone.now(),
+                data_source='ThaiWater API'
             )
+            self.stdout.write(self.style.SUCCESS(f'Saved: {level}m ({risk_text}) for {station.station_name}'))
+            
+            # Send LINE Alert if Critical
+            if risk_level == 2:
+                msg = f"🚨 แจ้งเตือนน้ำท่วม!\n📍 สถานี: {station.station_name}\n🌊 ระดับน้ำ: {level} ม.รทก.\n🔥 สถานะ: {risk_text}\n🕒 เวลา: {timezone.now().strftime('%H:%M น.')}"
+                send_multicast_alert(msg)
 
-            # ส่งแจ้งเตือนถ้าระดับน้ำเกินเกณฑ์ (เฉพาะสถานี TS16)
-            if risk_level > 0 and station_id == 'TS16' :
-                
-                # แปลงเวลาเป็น String(เวลาไทย)
-                time_str = recorded_time.strftime('%H:%M')
-                date_str = recorded_time.strftime('%d/%m/%Y')
-
-                # เลือก Icon ตามความรุนแรง
-                icon = "🟡" if risk_level == 1 else "🔴"
-                
-                # สร้างข้อความแจ้งเตือน
-                alert_msg = (
-                    f"{icon} แจ้งเตือนความเสี่ยงน้ำท่วม! {icon}\n"
-                    f"📍 {station_name}\n"
-                    f"🌊 ระดับน้ำ: {water_level} ม.\n"
-                    f"📢 สถานะ: {risk_text}\n"
-                    f"⏰ เวลา: {time_str} น. ({date_str})"
-                )
-
-                # ส่งเข้า Line ทันที (เฉพาะคนที่ is_active=1)
-                send_multicast_alert(alert_msg)
-
-            self.stdout.write(self.style.SUCCESS(f'Saved: {water_level}m ({risk_text}) for {station_name}'))
-
-        except requests.exceptions.RequestException as e:
-            self.stdout.write(self.style.ERROR(f'Could not retrieve the webpage for {station_name}: {e}'))
-        except (ValueError, AttributeError, KeyError) as e:
-            self.stdout.write(self.style.ERROR(f'Could not parse the page content for {station_name}: {e}'))
+        except WaterStations.DoesNotExist:
+            self.stdout.write(self.style.ERROR(f'Station ID {station_id} not found in database'))
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f'Error processing {station_name}: {e}'))
+            self.stdout.write(self.style.ERROR(f'Error saving data for {station_id}: {e}'))
