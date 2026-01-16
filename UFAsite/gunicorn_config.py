@@ -15,7 +15,7 @@ max_requests = 1000
 max_requests_jitter = 50
 
 # Preload app
-preload_app = True
+preload_app = False
 
 # Logging
 accesslog = '-'

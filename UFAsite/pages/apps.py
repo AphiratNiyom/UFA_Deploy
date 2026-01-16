@@ -8,7 +8,7 @@ class PagesConfig(AppConfig):
         # เมื่อ Django เริ่มทำงาน ให้ start scheduler ด้วย
         # ต้องเช็คว่าไม่ได้รันอยู่ในโหมด reloader (ป้องกันการรันซ้ำ 2 รอบ)
         import os
-        if os.environ.get('RUN_MAIN', None) != 'true':
+        if os.environ.get('RUN_MAIN', None) != 'true' and 'RENDER' not in os.environ:
             return
             
         from . import updater
