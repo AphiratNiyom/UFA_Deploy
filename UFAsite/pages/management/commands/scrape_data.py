@@ -1,5 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from django.core.management.base import BaseCommand
 from pages.models import WaterStations, WaterLevels
 from datetime import datetime
@@ -50,11 +53,16 @@ class Command(BaseCommand):
 
         try:
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html, */*; q=0.01',
+                'Accept-Language': 'th-TH,th;q=0.9,en-US;q=0.8,en;q=0.7',
+                'Referer': 'https://watertele.egat.co.th/',
+                'X-Requested-With': 'XMLHttpRequest',
                 'Connection': 'keep-alive',
             }
-            response = requests.get(ajax_url, headers=headers, timeout=20)
+            # verify=False help avoid SSL errors from some legacy gov servers
+            # timeout increased to 30s
+            response = requests.get(ajax_url, headers=headers, timeout=30, verify=False)
             response.raise_for_status()
             response.encoding = 'windows-874'
             soup = BeautifulSoup(response.text, 'html.parser')
