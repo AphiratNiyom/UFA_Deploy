@@ -4,6 +4,11 @@ import dj_database_url
 import pymysql
 
 pymysql.install_as_MySQLdb()
+import MySQLdb
+# Monkey-patch version to satisfy Django 5.x requirements
+if hasattr(MySQLdb, 'version_info'):
+    MySQLdb.version_info = (2, 2, 1, 'final', 0)
+    MySQLdb.version = "2.2.1"
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
