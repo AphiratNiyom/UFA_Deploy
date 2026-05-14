@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าสู่ระบบ — UFA Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: #f1f5f9;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated background orbs */
+        body::before, body::after {
+            content: '';
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            animation: drift 10s ease-in-out infinite alternate;
+        }
+        body::before {
+            width: 500px; height: 500px;
+            background: #f59e0b;
+            top: -100px; left: -100px;
+        }
+        body::after {
+            width: 400px; height: 400px;
+            background: #3b82f6;
+            bottom: -100px; right: -100px;
+            animation-duration: 14s;
+        }
+        @keyframes drift {
+            from { transform: translate(0, 0) scale(1); }
+            to   { transform: translate(40px, 30px) scale(1.1); }
+        }
+
+        .login-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            position: relative;
+            z-index: 10;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+            animation: slideUp 0.4s ease;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .login-logo .emoji { font-size: 48px; display: block; margin-bottom: 8px; }
+        .login-logo h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #f59e0b;
+        }
+        .login-logo p {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: #94a3b8;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .form-group { margin-bottom: 20px; }
+
+        .input {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #f1f5f9;
+            padding: 12px 14px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input:focus {
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245,158,11,0.1);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 13px;
+            background: #f59e0b;
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+        }
+        .btn-login:hover { background: #d97706; }
+        .btn-login:active { transform: scale(0.98); }
+
+        .error-box {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            color: #fca5a5;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #94a3b8;
+            font-size: 13px;
+            text-decoration: none;
+        }
+        .back-link:hover { color: #f1f5f9; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-logo">
+            <span class="emoji">🌊</span>
+            <h1>UFA Admin Panel</h1>
+            <p>ระบบแจ้งเตือนน้ำท่วมอุบลราชธานี</p>
+        </div>
+
+        {% if error %}
+        <div class="error-box">⚠️ {{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="{% url 'admin_login' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label" for="password">รหัสผ่านผู้ดูแลระบบ</label>
+                <input
+                    id="password"
+                    class="input"
+                    type="password"
+                    name="password"
+                    placeholder="กรอกรหัสผ่าน..."
+                    autofocus
+                    required
+                >
+            </div>
+            <button class="btn-login" type="submit">เข้าสู่ระบบ 🔑</button>
+        </form>
+
+        <a href="{% url 'home' %}" class="back-link">← กลับหน้าหลัก</a>
+    </div>
+</body>
+</html>

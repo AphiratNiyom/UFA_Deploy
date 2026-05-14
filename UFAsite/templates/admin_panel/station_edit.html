@@ -1,0 +1,91 @@
+{% extends "admin_panel/base_admin.html" %}
+
+{% block title %}แก้ไขสถานี {{ station.station_id }}{% endblock %}
+{% block page_title %}แก้ไขสถานี{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>แก้ไขข้อมูลสถานี</h2>
+        <p>{{ station.station_name }} ({{ station.station_id }})</p>
+    </div>
+    <a href="{% url 'admin_stations' %}" class="btn btn-ghost">← กลับ</a>
+</div>
+
+<div style="max-width:560px;">
+    <div class="card">
+        <!-- Station Info (readonly) -->
+        <div style="background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:24px;">
+            <div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:12px;">
+                ข้อมูลสถานี (อ่านอย่างเดียว)
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:13px;">
+                <div>
+                    <div style="color:var(--text-muted); font-size:11px;">รหัสสถานี</div>
+                    <div style="font-weight:600; color:var(--primary);">{{ station.station_id }}</div>
+                </div>
+                <div>
+                    <div style="color:var(--text-muted); font-size:11px;">รหัสสถานีระบบ</div>
+                    <div>{{ station.station_code|default:"—" }}</div>
+                </div>
+                <div>
+                    <div style="color:var(--text-muted); font-size:11px;">ละติจูด</div>
+                    <div>{{ station.latitude|default:"—" }}</div>
+                </div>
+                <div>
+                    <div style="color:var(--text-muted); font-size:11px;">ลองจิจูด</div>
+                    <div>{{ station.longitude|default:"—" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Form -->
+        <form method="POST" action="{% url 'admin_station_edit' station.station_id %}">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label class="form-label" for="warning_level">
+                    🟡 เกณฑ์เฝ้าระวัง (เมตร รทก.)
+                </label>
+                <input
+                    id="warning_level"
+                    type="number"
+                    name="warning_level"
+                    class="input"
+                    step="0.01"
+                    value="{{ station.warning_level|default:'' }}"
+                    placeholder="เช่น 14.50"
+                >
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="critical_level">
+                    🔴 เกณฑ์วิกฤต (เมตร รทก.)
+                </label>
+                <input
+                    id="critical_level"
+                    type="number"
+                    name="critical_level"
+                    class="input"
+                    step="0.01"
+                    value="{{ station.critical_level|default:'' }}"
+                    placeholder="เช่น 16.00"
+                >
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="is_active">สถานะสถานี</label>
+                <select id="is_active" name="is_active" class="input">
+                    <option value="1" {% if station.is_active %}selected{% endif %}>✅ เปิดใช้งาน (Active)</option>
+                    <option value="0" {% if not station.is_active %}selected{% endif %}>❌ ปิดใช้งาน (Inactive)</option>
+                </select>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:8px;">
+                <button type="submit" class="btn btn-primary">💾 บันทึกการเปลี่ยนแปลง</button>
+                <a href="{% url 'admin_stations' %}" class="btn btn-ghost">ยกเลิก</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

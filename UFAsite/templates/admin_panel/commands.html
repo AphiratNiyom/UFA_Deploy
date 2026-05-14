@@ -1,0 +1,336 @@
+{% extends "admin_panel/base_admin.html" %}
+
+{% block title %}คำสั่งระบบ{% endblock %}
+{% block page_title %}คำสั่งระบบ{% endblock %}
+
+{% block extra_css %}
+<style>
+    .commands-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-bottom: 28px;
+    }
+    .cmd-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        transition: border-color 0.2s, transform 0.15s;
+    }
+    .cmd-card:hover { border-color: #475569; transform: translateY(-1px); }
+    .cmd-card.blue:hover   { border-color: rgba(59,130,246,0.5); }
+    .cmd-card.purple:hover { border-color: rgba(168,85,247,0.5); }
+    .cmd-card.amber:hover  { border-color: rgba(245,158,11,0.5); }
+    .cmd-card.green:hover  { border-color: rgba(34,197,94,0.5); }
+
+    .cmd-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 10px;
+    }
+    .cmd-icon {
+        font-size: 24px;
+        width: 44px; height: 44px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 10px;
+    }
+    .cmd-icon.blue   { background: rgba(59,130,246,0.15); }
+    .cmd-icon.purple { background: rgba(168,85,247,0.15); }
+    .cmd-icon.amber  { background: rgba(245,158,11,0.15); }
+    .cmd-icon.green  { background: rgba(34,197,94,0.15); }
+
+    .cmd-title { font-weight: 600; font-size: 15px; }
+    .cmd-key {
+        font-size: 10px;
+        font-family: monospace;
+        background: var(--bg);
+        color: var(--text-muted);
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        margin-top: 2px;
+        display: inline-block;
+    }
+    .cmd-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6; }
+
+    .btn-run {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+        cursor: pointer;
+        border: none;
+        transition: opacity 0.15s, transform 0.1s;
+        color: #fff;
+    }
+    .btn-run.blue   { background: #3b82f6; }
+    .btn-run.purple { background: #a855f7; }
+    .btn-run.amber  { background: #f59e0b; color: #000; }
+    .btn-run.green  { background: #22c55e; color: #000; }
+    .btn-run:hover  { opacity: 0.88; }
+    .btn-run:active { transform: scale(0.96); }
+    .btn-run:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .spinner { display: inline-block; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Output Panel */
+    .output-panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .output-header {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        justify-content: space-between;
+    }
+    .output-header .title { font-weight: 600; font-size: 14px; }
+    .output-status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 3px 10px;
+        border-radius: 20px;
+    }
+    .output-status.idle    { background: rgba(148,163,184,0.1); color: var(--text-muted); }
+    .output-status.running { background: rgba(59,130,246,0.15); color: #60a5fa; }
+    .output-status.success { background: rgba(34,197,94,0.15);  color: var(--success); }
+    .output-status.error   { background: rgba(239,68,68,0.15);  color: var(--danger); }
+
+    .output-body {
+        padding: 16px 20px;
+        min-height: 160px;
+        max-height: 380px;
+        overflow-y: auto;
+    }
+    .output-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 140px;
+        color: var(--text-muted);
+        font-size: 13px;
+        gap: 8px;
+    }
+    .output-placeholder .icon { font-size: 30px; }
+
+    pre#cmd-output {
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        line-height: 1.7;
+        color: #e2e8f0;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+    pre#cmd-output .line-err { color: #fca5a5; }
+    pre#cmd-output .line-ok  { color: #86efac; }
+
+    /* Modal */
+    .modal-overlay {
+        display: none;
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+        z-index: 1000; align-items: center; justify-content: center;
+    }
+    .modal-content {
+        background: var(--surface); padding: 24px; border-radius: 12px;
+        width: 100%; max-width: 400px; border: 1px solid var(--border);
+    }
+    .modal-content h3 { margin-top: 0; margin-bottom: 16px; font-size: 18px; }
+    .modal-content .form-group { margin-bottom: 12px; }
+    .modal-content label { display: block; margin-bottom: 4px; font-size: 13px; color: var(--text-muted); }
+    .modal-content input, .modal-content select { width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: #fff; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+    .modal-btn { padding: 8px 16px; border-radius: 6px; cursor: pointer; border: none; font-weight: 600; font-size: 13px; }
+    .btn-cancel { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+    .btn-cancel:hover { background: rgba(255,255,255,0.05); }
+    .btn-confirm { background: #22c55e; color: #000; }
+    .btn-confirm:hover { background: #16a34a; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>คำสั่งระบบ</h2>
+        <p>รัน Django Management Commands — ดู output หลังจบการทำงาน</p>
+    </div>
+</div>
+
+<!-- Command Cards -->
+<div class="commands-grid">
+    {% for key, cmd in commands.items %}
+    <div class="cmd-card {{ cmd.color }}">
+        <div class="cmd-header">
+            <div class="cmd-icon {{ cmd.color }}">{{ cmd.icon }}</div>
+            <div>
+                <div class="cmd-title">{{ cmd.label }}</div>
+                <div class="cmd-key">manage.py {{ key }}</div>
+            </div>
+        </div>
+        <div class="cmd-desc">{{ cmd.description }}</div>
+        <button
+            id="btn-{{ key }}"
+            class="btn-run {{ cmd.color }}"
+            onclick="runCommand('{{ key }}')"
+            data-command="{{ key }}"
+        >
+            ▶ รันคำสั่ง
+        </button>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Output Panel -->
+<div class="output-panel">
+    <div class="output-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span>🖥️</span>
+            <span class="title">Output Log</span>
+            <span id="running-cmd-label" style="font-size:12px; color:var(--text-muted);"></span>
+        </div>
+        <div class="output-status idle" id="cmd-status">
+            <span>●</span> รอคำสั่ง
+        </div>
+    </div>
+    <div class="output-body" id="output-body">
+        <div class="output-placeholder" id="output-placeholder">
+            <span class="icon">⌨️</span>
+            เลือกคำสั่งด้านบนเพื่อเริ่มทำงาน
+        </div>
+        <pre id="cmd-output" style="display:none;"></pre>
+    </div>
+</div>
+
+<!-- Import Data Modal -->
+<div class="modal-overlay" id="importModal">
+    <div class="modal-content">
+        <h3>นำเข้าข้อมูลประวัติ (ThaiWater)</h3>
+        <div class="form-group">
+            <label>เลือกสถานี</label>
+            <select id="inp_station_select">
+                <option value="TS16|1243144698">สถานี M.7 เมืองอุบลราชธานี (TS16)</option>
+                <option value="TS2|1243144682">สถานี M.5 อ.ราษีไศล จ.ศรีสะเกษ (TS2)</option>
+                <option value="TS5|1243144699">สถานี M.11B ท้ายแก่งสะพือ (TS5)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>วันที่เริ่มต้น (YYYY-MM-DD)</label>
+            <input type="date" id="inp_start" value="2024-01-01">
+        </div>
+        <div class="form-group">
+            <label>วันที่สิ้นสุด (YYYY-MM-DD)</label>
+            <input type="date" id="inp_end" value="2024-01-31">
+        </div>
+        <div class="modal-actions">
+            <button class="modal-btn btn-cancel" onclick="closeImportModal()">ยกเลิก</button>
+            <button class="modal-btn btn-confirm" onclick="submitImport()">เริ่มนำเข้า</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = '{{ csrf_token }}';
+
+function runCommand(commandKey) {
+    if (commandKey === 'import_historical_data') {
+        document.getElementById('importModal').style.display = 'flex';
+        return;
+    }
+    executeCommand(commandKey, {});
+}
+
+function closeImportModal() {
+    document.getElementById('importModal').style.display = 'none';
+}
+
+function submitImport() {
+    closeImportModal();
+    const stationData = document.getElementById('inp_station_select').value.split('|');
+    const params = {
+        station_id: stationData[0],
+        api_id: stationData[1],
+        start_date: document.getElementById('inp_start').value,
+        end_date: document.getElementById('inp_end').value
+    };
+    executeCommand('import_historical_data', params);
+}
+
+function executeCommand(commandKey, extraParams) {
+    const statusEl   = document.getElementById('cmd-status');
+    const outputEl   = document.getElementById('cmd-output');
+    const placeholder = document.getElementById('output-placeholder');
+    const labelEl    = document.getElementById('running-cmd-label');
+
+    // Disable all buttons
+    document.querySelectorAll('.btn-run').forEach(btn => {
+        btn.disabled = true;
+        if (btn.dataset.command === commandKey) {
+            btn.innerHTML = '<span class="spinner">⟳</span> กำลังรัน...';
+        }
+    });
+
+    // Update status UI
+    statusEl.className = 'output-status running';
+    statusEl.innerHTML = '<span class="spinner">⟳</span> กำลังทำงาน...';
+    labelEl.textContent = `manage.py ${commandKey}`;
+    placeholder.style.display = 'none';
+    outputEl.style.display = 'block';
+    outputEl.textContent = '';
+
+    let bodyParams = new URLSearchParams({ command: commandKey });
+    for (const [key, value] of Object.entries(extraParams)) {
+        bodyParams.append(key, value);
+    }
+
+    fetch('{% url "admin_run_command" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken,
+        },
+        body: bodyParams,
+    })
+    .then(r => r.json())
+    .then(data => {
+        outputEl.textContent = data.output || '(ไม่มี output)';
+        if (data.success) {
+            statusEl.className = 'output-status success';
+            statusEl.innerHTML = '<span>✓</span> สำเร็จ';
+        } else {
+            statusEl.className = 'output-status error';
+            statusEl.innerHTML = '<span>✕</span> เกิดข้อผิดพลาด';
+        }
+    })
+    .catch(err => {
+        outputEl.textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + err.message;
+        statusEl.className = 'output-status error';
+        statusEl.innerHTML = '<span>✕</span> Connection Error';
+    })
+    .finally(() => {
+        // Re-enable all buttons
+        document.querySelectorAll('.btn-run').forEach(btn => {
+            btn.disabled = false;
+            const key = btn.dataset.command;
+            btn.innerHTML = '▶ รันคำสั่ง';
+        });
+    });
+}
+</script>
+{% endblock %}

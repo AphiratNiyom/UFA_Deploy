@@ -160,3 +160,6 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+
+# Custom Admin Panel Password
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'ufa-admin-2024')

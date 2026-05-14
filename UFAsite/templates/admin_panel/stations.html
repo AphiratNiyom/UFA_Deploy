@@ -1,0 +1,82 @@
+{% extends "admin_panel/base_admin.html" %}
+
+{% block title %}สถานีตรวจวัด{% endblock %}
+{% block page_title %}สถานีตรวจวัด{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>สถานีตรวจวัดระดับน้ำ</h2>
+        <p>ทั้งหมด {{ stations|length }} สถานี — คลิก "แก้ไข" เพื่อปรับค่าเกณฑ์แจ้งเตือน</p>
+    </div>
+</div>
+
+<div class="card" style="padding:0; overflow:hidden;">
+    {% if stations %}
+    <table>
+        <thead>
+            <tr>
+                <th>รหัสสถานี</th>
+                <th>ชื่อสถานี</th>
+                <th>พิกัด</th>
+                <th>เกณฑ์เฝ้าระวัง (ม.)</th>
+                <th>เกณฑ์วิกฤต (ม.)</th>
+                <th>สถานะ</th>
+                <th>อัพเดตล่าสุด</th>
+                <th>การจัดการ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for station in stations %}
+            <tr>
+                <td>
+                    <code style="font-size:12px; background:var(--bg); padding:3px 8px; border-radius:5px; color:var(--primary);">
+                        {{ station.station_id }}
+                    </code>
+                </td>
+                <td>
+                    <div style="font-weight:500;">{{ station.station_name|default:"—" }}</div>
+                    <div style="font-size:11px; color:var(--text-muted);">{{ station.station_code|default:"" }}</div>
+                </td>
+                <td style="font-size:11px; color:var(--text-muted);">
+                    {% if station.latitude and station.longitude %}
+                        {{ station.latitude }}, {{ station.longitude }}
+                    {% else %}—{% endif %}
+                </td>
+                <td>
+                    {% if station.warning_level %}
+                        <span style="color:var(--primary); font-weight:600;">{{ station.warning_level }}</span>
+                    {% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
+                </td>
+                <td>
+                    {% if station.critical_level %}
+                        <span style="color:var(--danger); font-weight:600;">{{ station.critical_level }}</span>
+                    {% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
+                </td>
+                <td>
+                    {% if station.is_active %}
+                        <span class="badge badge-success">● เปิดใช้งาน</span>
+                    {% else %}
+                        <span class="badge badge-danger">● ปิดใช้งาน</span>
+                    {% endif %}
+                </td>
+                <td style="font-size:11px; color:var(--text-muted);">
+                    {{ station.updated_at|date:"d/m/Y H:i"|default:"—" }}
+                </td>
+                <td>
+                    <a href="{% url 'admin_station_edit' station.station_id %}" class="btn btn-ghost btn-sm">
+                        ✏️ แก้ไข
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center; padding:60px; color:var(--text-muted);">
+        <div style="font-size:40px; margin-bottom:12px;">📍</div>
+        ยังไม่มีสถานีในระบบ
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

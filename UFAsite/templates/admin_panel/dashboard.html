@@ -1,0 +1,172 @@
+{% extends "admin_panel/base_admin.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: border-color 0.2s, transform 0.2s;
+    }
+    .stat-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+    .stat-icon {
+        font-size: 28px;
+        width: 52px; height: 52px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 12px;
+    }
+    .stat-icon.blue   { background: rgba(59,130,246,0.15); }
+    .stat-icon.green  { background: rgba(34,197,94,0.15); }
+    .stat-icon.amber  { background: rgba(245,158,11,0.15); }
+    .stat-icon.purple { background: rgba(168,85,247,0.15); }
+    .stat-info .value {
+        font-size: 28px;
+        font-weight: 700;
+        line-height: 1;
+    }
+    .stat-info .label {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 4px;
+        font-weight: 500;
+    }
+    .stat-info .sub {
+        font-size: 11px;
+        color: var(--success);
+        margin-top: 6px;
+    }
+
+    .risk-0 { color: var(--success); }
+    .risk-1 { color: var(--primary); }
+    .risk-2 { color: var(--danger); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>ภาพรวมระบบ</h2>
+        <p>ข้อมูล ณ วันที่ปัจจุบัน — ระบบ Ubon Flood Alert</p>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon blue">👥</div>
+        <div class="stat-info">
+            <div class="value">{{ total_users }}</div>
+            <div class="label">ผู้ใช้ทั้งหมด</div>
+            <div class="sub">✓ Active {{ active_users }} คน</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green">📍</div>
+        <div class="stat-info">
+            <div class="value">{{ total_stations }}</div>
+            <div class="label">สถานีตรวจวัด</div>
+            <div class="sub">✓ เปิดใช้งาน {{ active_stations }} สถานี</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon amber">💧</div>
+        <div class="stat-info">
+            <div class="value">
+                {% if recent_levels %}
+                    {{ recent_levels.0.water_level }}
+                {% else %}—{% endif %}
+            </div>
+            <div class="label">ระดับน้ำล่าสุด (ม.)</div>
+            <div class="sub">
+                {% if recent_levels %}{{ recent_levels.0.station.station_name }}{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon purple">🤖</div>
+        <div class="stat-info">
+            <div class="value">
+                {% if recent_levels %}
+                    {% with r=recent_levels.0.risk_level %}
+                        {% if r == 0 %}🟢{% elif r == 1 %}🟡{% else %}🔴{% endif %}
+                    {% endwith %}
+                {% else %}—{% endif %}
+            </div>
+            <div class="label">ระดับความเสี่ยง</div>
+            <div class="sub">
+                {% if recent_levels %}
+                    {% with r=recent_levels.0.risk_level %}
+                        {% if r == 0 %}ปกติ{% elif r == 1 %}เฝ้าระวัง{% else %}วิกฤต{% endif %}
+                    {% endwith %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Water Levels Table -->
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <div>
+            <div style="font-weight:600; font-size:15px;">ข้อมูลระดับน้ำล่าสุด</div>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">10 รายการล่าสุดจากทุกสถานี</div>
+        </div>
+        <a href="{% url 'admin_stations' %}" class="btn btn-ghost btn-sm">ดูสถานี →</a>
+    </div>
+    {% if recent_levels %}
+    <table>
+        <thead>
+            <tr>
+                <th>สถานี</th>
+                <th>ระดับน้ำ (ม.)</th>
+                <th>ปริมาณฝน (มม.)</th>
+                <th>ความเสี่ยง</th>
+                <th>บันทึกเมื่อ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for level in recent_levels %}
+            <tr>
+                <td>
+                    <div style="font-weight:500;">{{ level.station.station_name }}</div>
+                    <div style="font-size:11px; color:var(--text-muted);">{{ level.station.station_id }}</div>
+                </td>
+                <td style="font-weight:600; font-size:15px;">{{ level.water_level }}</td>
+                <td>{{ level.rainfall|default:"—" }}</td>
+                <td>
+                    {% if level.risk_level == 0 %}
+                        <span class="badge badge-success">🟢 ปกติ</span>
+                    {% elif level.risk_level == 1 %}
+                        <span class="badge badge-primary">🟡 เฝ้าระวัง</span>
+                    {% else %}
+                        <span class="badge badge-danger">🔴 วิกฤต</span>
+                    {% endif %}
+                </td>
+                <td style="color:var(--text-muted); font-size:12px;">
+                    {{ level.recorded_at|date:"d/m/Y H:i" }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center; padding:40px; color:var(--text-muted);">
+        <div style="font-size:32px; margin-bottom:8px;">📭</div>
+        ยังไม่มีข้อมูลระดับน้ำในระบบ
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

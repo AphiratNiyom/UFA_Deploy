@@ -14,6 +14,13 @@
       <span class="navbar-text text-white-50 small d-none d-md-block">
         ระบบเตือนภัยน้ำท่วมอุบลราชธานี (Ubon Flood Alert)
       </span>
+      <a href="{% url 'admin_login' %}" id="admin-panel-btn"
+         class="btn btn-sm ms-auto"
+         style="background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.4); color:#f59e0b; border-radius:20px; padding:5px 14px; font-size:12px; font-weight:600; transition: all 0.2s;"
+         onmouseover="this.style.background='rgba(245,158,11,0.3)'"
+         onmouseout="this.style.background='rgba(245,158,11,0.15)'">
+        🔐 Admin
+      </a>
     </div>
   </nav>
 
@@ -157,6 +164,14 @@
     </div>
 
   </main>
+
+  <!-- Footer -->
+  <footer style="text-align:center; padding: 16px 0 24px; opacity:0.45;">
+    <a href="{% url 'admin_login' %}" style="color:#f59e0b; font-size:11px; text-decoration:none; letter-spacing:0.5px;">
+      🔐 ผู้ดูแลระบบ
+    </a>
+  </footer>
+
 </div>
 
 

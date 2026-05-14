@@ -43,7 +43,7 @@ class Command(BaseCommand):
         # ==========================================
         # 🚨 SIMULATION MODE: จำลองเหตุการณ์น้ำท่วม
         # ==========================================
-        SIMULATE_FLOOD = True
+        SIMULATE_FLOOD = False
 
         if SIMULATE_FLOOD:
             print("🌊 กำลังสร้างข้อมูลน้ำท่วมจำลอง...")

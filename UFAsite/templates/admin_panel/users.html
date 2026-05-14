@@ -1,0 +1,161 @@
+{% extends "admin_panel/base_admin.html" %}
+
+{% block title %}จัดการผู้ใช้{% endblock %}
+{% block page_title %}จัดการผู้ใช้{% endblock %}
+
+{% block extra_css %}
+<style>
+    .search-bar {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    .search-bar .input { max-width: 320px; }
+    .user-avatar {
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: var(--surface-2);
+    }
+    .user-avatar-placeholder {
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        background: var(--surface-2);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px;
+        color: var(--text-muted);
+    }
+    .toggle-form { display: inline; }
+    .action-cell { display: flex; gap: 6px; flex-wrap: wrap; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>ผู้ใช้งานระบบ</h2>
+        <p>LINE Users ที่ลงทะเบียนผ่าน LINE Bot — ทั้งหมด {{ users|length }} รายการ</p>
+    </div>
+</div>
+
+<!-- Search -->
+<form method="GET" class="search-bar">
+    <input
+        id="search-input"
+        type="text"
+        name="search"
+        class="input"
+        placeholder="🔍 ค้นหาชื่อผู้ใช้..."
+        value="{{ search }}"
+    >
+    <button type="submit" class="btn btn-primary">ค้นหา</button>
+    {% if search %}
+    <a href="{% url 'admin_users' %}" class="btn btn-ghost">ล้าง</a>
+    {% endif %}
+</form>
+
+<div class="card" style="padding:0; overflow:hidden;">
+    {% if users %}
+    <table>
+        <thead>
+            <tr>
+                <th>ผู้ใช้</th>
+                <th>LINE User ID</th>
+                <th>สมัครเมื่อ</th>
+                <th>สถานะ</th>
+                <th>Admin</th>
+                <th>การจัดการ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        {% if user.picture_url %}
+                        <img src="{{ user.picture_url }}" class="user-avatar" alt="avatar">
+                        {% else %}
+                        <div class="user-avatar-placeholder">👤</div>
+                        {% endif %}
+                        <div>
+                            <div style="font-weight:500;">{{ user.display_name|default:"ไม่ระบุชื่อ" }}</div>
+                            {% if user.status_message %}
+                            <div style="font-size:11px; color:var(--text-muted);">{{ user.status_message|truncatechars:30 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <code style="font-size:11px; color:var(--text-muted); background:var(--bg); padding:2px 6px; border-radius:4px;">
+                        {{ user.line_user_id|truncatechars:20 }}
+                    </code>
+                </td>
+                <td style="font-size:12px; color:var(--text-muted);">
+                    {{ user.registered_at|date:"d/m/Y H:i"|default:"—" }}
+                </td>
+                <td>
+                    {% if user.is_active %}
+                        <span class="badge badge-success">● Active</span>
+                    {% else %}
+                        <span class="badge badge-danger">● Inactive</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.is_admin %}
+                        <span class="badge badge-primary">⭐ Admin</span>
+                    {% else %}
+                        <span class="badge badge-muted">User</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="action-cell">
+                        <!-- Toggle Active -->
+                        <form class="toggle-form" method="POST" action="{% url 'admin_user_toggle' user.user_id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="field" value="is_active">
+                            <button
+                                type="submit"
+                                class="btn btn-ghost btn-sm"
+                                title="{% if user.is_active %}ปิดการใช้งาน{% else %}เปิดการใช้งาน{% endif %}"
+                            >
+                                {% if user.is_active %}🔴 ปิด{% else %}🟢 เปิด{% endif %}
+                            </button>
+                        </form>
+
+                        <!-- Toggle Admin -->
+                        <form class="toggle-form" method="POST" action="{% url 'admin_user_toggle' user.user_id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="field" value="is_admin">
+                            <button
+                                type="submit"
+                                class="btn btn-ghost btn-sm"
+                                title="{% if user.is_admin %}ถอน Admin{% else %}มอบสิทธิ์ Admin{% endif %}"
+                            >
+                                {% if user.is_admin %}⬇️ ถอน Admin{% else %}⭐ Admin{% endif %}
+                            </button>
+                        </form>
+
+                        <!-- Delete -->
+                        <form class="toggle-form" method="POST" action="{% url 'admin_user_delete' user.user_id %}"
+                              onsubmit="return confirm('ยืนยันลบผู้ใช้ {{ user.display_name|default:user.line_user_id }} ออกจากระบบ?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm">🗑️ ลบ</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center; padding:60px; color:var(--text-muted);">
+        <div style="font-size:40px; margin-bottom:12px;">👥</div>
+        {% if search %}
+            ไม่พบผู้ใช้ที่ตรงกับ "<strong>{{ search }}</strong>"
+        {% else %}
+            ยังไม่มีผู้ใช้ลงทะเบียนในระบบ
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
