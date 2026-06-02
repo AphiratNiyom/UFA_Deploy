@@ -6,9 +6,9 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from django.core.management.base import BaseCommand
 from pages.models import WaterStations, WaterLevels
 from datetime import datetime
-from pages.risk_calculator import evaluate_flood_risk
+from pages.risk_calculator import RiskCalculator
 from django.utils.timezone import make_aware
-from pages.utils import send_multicast_alert
+from pages.utils import LineUtils
 import re
 from django.utils import timezone
 
@@ -85,7 +85,7 @@ class Command(BaseCommand):
             station = WaterStations.objects.get(station_id=station_id)
             
             # Risk Calculation
-            risk_level, risk_text = evaluate_flood_risk(level, station_id)
+            risk_level, risk_text = RiskCalculator.evaluate_flood_risk(level, station_id)
             self.stdout.write(f"Analyzed Risk for {station_id}: {risk_text} (Level: {level}m)")
 
             # Save to DB
@@ -101,7 +101,7 @@ class Command(BaseCommand):
             # Send LINE Alert if Critical
             if risk_level == 2:
                 msg = f"🚨 แจ้งเตือนน้ำท่วม!\n📍 สถานี: {station.station_name}\n🌊 ระดับน้ำ: {level} ม.รทก.\n🔥 สถานะ: {risk_text}\n🕒 เวลา: {timezone.now().strftime('%H:%M น.')}"
-                send_multicast_alert(msg)
+                LineUtils.send_multicast_alert(msg)
 
         except WaterStations.DoesNotExist:
             self.stdout.write(self.style.ERROR(f'Station ID {station_id} not found in database'))

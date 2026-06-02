@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from pages.predictor import train_and_save_model
+from pages.predictor import Predictor
 
 class Command(BaseCommand):
     help = 'Fetches all historical data, trains a new prediction model, and saves it.'
@@ -8,7 +8,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('Starting model training...'))
         
         try:
-            model_path = train_and_save_model()
+            model_path = Predictor.train_and_save_model()
             if model_path:
                 self.stdout.write(self.style.SUCCESS(f'Successfully trained and saved model to {model_path}'))
             else:

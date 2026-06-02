@@ -10,23 +10,56 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--station_id', type=str, required=True, help='Internal Station ID (e.g., TS16)')
-        parser.add_argument('--api_id', type=str, required=True, help='ThaiWater API Station ID (e.g., 2752)')
+        parser.add_argument('--station_code', type=str, required=True, help='ThaiWater Station Code (e.g., M.7)')
         parser.add_argument('--start', type=str, required=True, help='Start date (YYYY-MM-DD)')
         parser.add_argument('--end', type=str, required=True, help='End date (YYYY-MM-DD)')
 
     def handle(self, *args, **kwargs):
         station_id = kwargs['station_id']
-        api_id = kwargs['api_id']
+        station_code = kwargs['station_code']
         start_date_str = kwargs['start']
         end_date_str = kwargs['end']
 
         # Ensure station exists
         station, created = WaterStations.objects.get_or_create(
             station_id=station_id,
-            defaults={'station_name': f'Imported Station {api_id}'}
+            defaults={'station_name': f'Imported Station {station_code}'}
         )
         if created:
             self.stdout.write(self.style.WARNING(f'Created new station: {station_id}'))
+
+        # Fetch the current numeric API ID for the given station code
+        self.stdout.write(f"Looking up numeric API ID for station code: {station_code}")
+        try:
+            info_url = "https://api-v3.thaiwater.net/api/v1/thaiwater30/public/waterlevel"
+            info_resp = requests.get(info_url, verify=False, timeout=30)
+            info_resp.raise_for_status()
+            info_data = info_resp.json()
+            
+            stations_data = []
+            if 'data' in info_data:
+                if isinstance(info_data['data'], list):
+                    stations_data = info_data['data']
+                elif 'waterlevel_data' in info_data['data']:
+                    stations_data = info_data['data']['waterlevel_data']
+            elif isinstance(info_data, list):
+                stations_data = info_data
+                
+            api_id = None
+            for item in stations_data:
+                sc = item.get('station', {}).get('tele_station_oldcode', '')
+                if sc == station_code:
+                    api_id = str(item.get('station', {}).get('id', ''))
+                    break
+            
+            if not api_id:
+                self.stdout.write(self.style.ERROR(f"Could not find numeric API ID for station code: {station_code}"))
+                return
+                
+            self.stdout.write(self.style.SUCCESS(f"Found API ID: {api_id} for {station_code}"))
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"Error fetching API ID for {station_code}: {e}"))
+            return
 
         # Prepare date chunks (Monthly)
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
