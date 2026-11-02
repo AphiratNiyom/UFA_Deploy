@@ -16,4 +16,5 @@ urlpatterns = [
     path('admin-panel/stations/<str:station_id>/edit/', AdminViews.admin_station_edit, name='admin_station_edit'),
     path('admin-panel/commands/', AdminViews.admin_commands, name='admin_commands'),
     path('admin-panel/run-command/', AdminViews.admin_run_command, name='admin_run_command'),
-]
+    path('admin-panel/cancel-command/', AdminViews.admin_cancel_command, name='admin_cancel_command'),
+]

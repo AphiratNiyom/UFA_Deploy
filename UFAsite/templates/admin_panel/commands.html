@@ -110,10 +110,33 @@
     .output-status.success { background: rgba(34,197,94,0.15);  color: var(--success); }
     .output-status.error   { background: rgba(239,68,68,0.15);  color: var(--danger); }
 
+    /* Cancel Button */
+    .btn-cancel-cmd {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+        border: 1px solid rgba(239, 68, 68, 0.35);
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .btn-cancel-cmd:hover {
+        background: rgba(239, 68, 68, 0.25);
+        border-color: rgba(239, 68, 68, 0.55);
+        color: #fca5a5;
+    }
+    .btn-cancel-cmd:active { transform: scale(0.96); }
+    .btn-cancel-cmd:disabled { opacity: 0.5; cursor: not-allowed; }
+
     .output-body {
         padding: 16px 20px;
         min-height: 160px;
-        max-height: 380px;
+        max-height: 600px;
         overflow-y: auto;
     }
     .output-placeholder {
@@ -148,14 +171,18 @@
     }
     .modal-content {
         background: var(--surface); padding: 24px; border-radius: 12px;
-        width: 100%; max-width: 400px; border: 1px solid var(--border);
+        width: 100%; max-width: 480px; border: 1px solid var(--border);
     }
-    .modal-content h3 { margin-top: 0; margin-bottom: 16px; font-size: 18px; }
-    .modal-content .form-group { margin-bottom: 12px; }
-    .modal-content label { display: block; margin-bottom: 4px; font-size: 13px; color: var(--text-muted); }
-    .modal-content input, .modal-content select { width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: #fff; }
-    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
-    .modal-btn { padding: 8px 16px; border-radius: 6px; cursor: pointer; border: none; font-weight: 600; font-size: 13px; }
+    .modal-content h3 { margin-top: 0; margin-bottom: 8px; font-size: 18px; }
+    .modal-content .form-group { margin-bottom: 14px; }
+    .modal-content label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-muted); }
+    .modal-content input, .modal-content select {
+        width: 100%; padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); background: var(--bg); color: #fff;
+        font-size: 13px;
+    }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+    .modal-btn { padding: 9px 18px; border-radius: 6px; cursor: pointer; border: none; font-weight: 600; font-size: 13px; }
     .btn-cancel { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
     .btn-cancel:hover { background: rgba(255,255,255,0.05); }
     .btn-confirm { background: #22c55e; color: #000; }
@@ -167,7 +194,7 @@
 <div class="page-header">
     <div>
         <h2>คำสั่งระบบ</h2>
-        <p>รัน Django Management Commands — ดู output หลังจบการทำงาน</p>
+        <p>รัน Django Management Commands — ดูผลลัพธ์และสถิติหลังจบการทำงาน</p>
     </div>
 </div>
 
@@ -203,8 +230,19 @@
             <span class="title">Output Log</span>
             <span id="running-cmd-label" style="font-size:12px; color:var(--text-muted);"></span>
         </div>
-        <div class="output-status idle" id="cmd-status">
-            <span>●</span> รอคำสั่ง
+        <div style="display:flex; align-items:center; gap:10px;">
+            <button
+                id="btn-cancel-cmd"
+                class="btn-cancel-cmd"
+                style="display:none;"
+                onclick="cancelCurrentCommand()"
+                title="คลิกเพื่อยกเลิกการทำงานของคำสั่งนี้ทันที"
+            >
+                ⏹ ยกเลิกคำสั่ง
+            </button>
+            <div class="output-status idle" id="cmd-status">
+                <span>●</span> รอคำสั่ง
+            </div>
         </div>
     </div>
     <div class="output-body" id="output-body">
@@ -213,6 +251,61 @@
             เลือกคำสั่งด้านบนเพื่อเริ่มทำงาน
         </div>
         <pre id="cmd-output" style="display:none;"></pre>
+
+        <!-- Dynamic Chart Display for Simulation / Evaluation -->
+        <div id="chart-container" style="display:none; margin-top:20px; padding-top:16px; border-top:1px solid var(--border);">
+            <!-- Toolbar Header -->
+            <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:16px;">📈</span>
+                    <span style="font-size:14px; font-weight:600; color:#e2e8f0;">กราฟการประเมินผลโมเดล (Model Evaluation)</span>
+                    <span id="chart-summary-badge" style="display:none; font-size:11px; background:rgba(168,85,247,0.2); color:#c084fc; border:1px solid rgba(168,85,247,0.3); padding:2px 8px; border-radius:12px;"></span>
+                </div>
+
+                <!-- View Switch Buttons & Fullscreen -->
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <div style="display:inline-flex; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:2px;">
+                        <button type="button" id="btn-chart-mode-interactive" onclick="switchChartView('interactive')" style="padding:5px 12px; border:none; background:#7c3aed; color:#fff; font-size:12px; font-weight:600; border-radius:6px; cursor:pointer;">
+                            📊 กราฟ Interactive (ซูม/ลาก)
+                        </button>
+                        <button type="button" id="btn-chart-mode-static" onclick="switchChartView('static')" style="padding:5px 12px; border:none; background:transparent; color:var(--text-muted); font-size:12px; font-weight:600; border-radius:6px; cursor:pointer;">
+                            🖼️ ภาพนิ่ง (Overview + 72h)
+                        </button>
+                    </div>
+
+                    <button type="button" id="btn-reset-zoom" onclick="resetInteractiveZoom()" style="padding:5px 10px; border:1px solid var(--border); background:rgba(255,255,255,0.05); color:#cbd5e1; font-size:12px; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; gap:4px;" title="รีเซ็ตมุมมองซูมกลับสู่ค่าเริ่มต้น">
+                        <span>↺</span> รีเซ็ตซูม
+                    </button>
+
+                    <button type="button" onclick="openFullscreenModal()" style="padding:5px 10px; border:1px solid var(--border); background:rgba(255,255,255,0.05); color:#cbd5e1; font-size:12px; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; gap:4px;" title="ขยายดูภาพขนาดใหญ่เต็มจอ">
+                        <span>🔍</span> เต็มจอ
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div id="chart-metrics-bar" style="display:none; margin-bottom:12px; padding:10px 14px; background:rgba(15,23,42,0.7); border:1px solid var(--border); border-radius:8px; font-size:12px; color:#cbd5e1; display:flex; flex-wrap:wrap; gap:16px; align-items:center;">
+                <div>📊 <strong>R² Score:</strong> <span id="metric-r2" style="color:#22c55e; font-weight:bold;">-</span></div>
+                <div>🎯 <strong>MAE คลาดเคลื่อนเฉลี่ย:</strong> <span id="metric-mae" style="color:#38bdf8; font-weight:bold;">-</span> ม.</div>
+                <div>⏳ <strong>ระยะทำนาย:</strong> <span id="metric-horizon" style="color:#f59e0b; font-weight:bold;">-</span> ชม. ล่วงหน้า</div>
+                <div id="metric-lead-box" style="display:none;">⏱️ <strong>เตือนภัยล่วงหน้าได้จริง:</strong> <span id="metric-lead" style="color:#c084fc; font-weight:bold;">-</span></div>
+                <div>📅 <strong>ช่วงเวลา:</strong> <span id="metric-period" style="color:#e2e8f0;">-</span></div>
+                <div style="margin-left:auto; font-size:11px; color:var(--text-muted);">
+                    💡 <em>คลิกลากคลุมพื้นที่บนกราฟเพื่อซูมดูรายชั่วโมง หรือเลื่อนแถบเวลาด้านล่าง</em>
+                </div>
+            </div>
+
+            <!-- Interactive Plotly Box -->
+            <div id="plotly-chart-box" style="width:100%; height:520px; border-radius:8px; overflow:hidden; border:1px solid var(--border); background:#0f172a; box-shadow:0 4px 14px rgba(0,0,0,0.4);"></div>
+
+            <!-- Static Matplotlib Image Box -->
+            <div id="static-chart-box" style="display:none; text-align:center;">
+                <img id="eval-chart-img" src="" alt="Evaluation Chart" onclick="openFullscreenModal()" style="max-width:100%; cursor:zoom-in; border-radius:8px; border:1px solid var(--border); box-shadow:0 4px 14px rgba(0,0,0,0.4);" title="คลิกเพื่อเปิดดูภาพเต็มจอ" />
+                <div style="margin-top:6px; font-size:11px; color:var(--text-muted);">
+                    💡 ภาพเปรียบเทียบ 2 แถว: แถวบนภาพรวมทั้งช่วงเวลา / แถวล่างซูมเจาะลึก 72 ชม. จุดพีคน้ำสูงสุดรายชั่วโมง (คลิกภาพเพื่อดูเต็มจอ)
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -220,6 +313,7 @@
 <div class="modal-overlay" id="importModal">
     <div class="modal-content">
         <h3>นำเข้าข้อมูลประวัติ (ThaiWater)</h3>
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">ดึงข้อมูลย้อนหลังจาก ThaiWater API ตามช่วงวันที่กำหนด</p>
         <div class="form-group">
             <label>เลือกสถานี</label>
             <select id="inp_station_select">
@@ -242,15 +336,313 @@
         </div>
     </div>
 </div>
+
+<!-- Simulation / Evaluation Modal with Time Period Options -->
+<div class="modal-overlay" id="simulationModal">
+    <div class="modal-content" style="max-width: 500px;">
+        <h3>ทดสอบและประเมินโมเดล AI</h3>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+            เลือกโหมดและช่วงเวลาข้อมูลที่ต้องการใช้ประเมินความแม่นยำ (R², MAE, K-Fold)
+        </p>
+
+        <!-- 1. โหมดการทำงาน -->
+        <div class="form-group">
+            <label>1. โหมดการทำงาน</label>
+            <select id="inp_sim_mode">
+                <option value="evaluate">📊 ทดสอบความแม่นยำกับข้อมูลจริง (Real Data Benchmark)</option>
+                <option value="flash_flood">⚡ จำลองน้ำหลากฉับพลัน (Flash Flood Test: น้ำขึ้นกระทันหันที่ M.5)</option>
+                <option value="backwater">🌊 จำลองภาวะน้ำหนุนระบายช้า (Backwater Test: น้ำมูลตอนล่างระบายไม่ทัน)</option>
+                <option value="simulate">🔴 จำลองมหาอุทกภัย (Severe Flood: จำลองมวลน้ำหลากขนาดใหญ่)</option>
+            </select>
+        </div>
+
+        <!-- 2. เลือกตัวกรองเวลา (เดือน/ปี) -->
+        <div class="form-group">
+            <label>2. ช่วงเวลาข้อมูลที่ต้องการทดสอบ</label>
+            <select id="inp_sim_time_filter" onchange="toggleSimTimeFilter()">
+                <option value="all">🌐 ข้อมูลทั้งหมดในฐานข้อมูล (All Time)</option>
+                <option value="year">📅 เลือกเฉพาะปี (Select Year)</option>
+                <option value="month">🗓️ เลือกเดือนและปี (Select Month & Year)</option>
+                <option value="custom">📆 กำหนดช่วงวันที่เอง (Custom Date Range)</option>
+            </select>
+        </div>
+
+        <!-- ตัวเลือกปี / เดือน (ซ่อน/แสดง ตาม time_filter) -->
+        <div id="sim_year_month_group" style="display:none; gap: 10px; margin-bottom: 14px;">
+            <div style="flex: 1;" id="sim_year_box">
+                <label style="display:block; margin-bottom:6px; font-size:12px; color:var(--text-muted);">เลือกปี</label>
+                <select id="inp_sim_year" style="width:100%; padding:10px 12px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:#fff; font-size:13px;">
+                    <option value="2026">2026 (ปีปัจจุบัน)</option>
+                    <option value="2025">2025</option>
+                    <option value="2024" selected>2024</option>
+                </select>
+            </div>
+            <div style="flex: 1;" id="sim_month_box" style="display:none;">
+                <label style="display:block; margin-bottom:6px; font-size:12px; color:var(--text-muted);">เลือกเดือน</label>
+                <select id="inp_sim_month" style="width:100%; padding:10px 12px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:#fff; font-size:13px;">
+                    <option value="1">มกราคม (01)</option>
+                    <option value="2">กุมภาพันธ์ (02)</option>
+                    <option value="3">มีนาคม (03)</option>
+                    <option value="4">เมษายน (04)</option>
+                    <option value="5">พฤษภาคม (05)</option>
+                    <option value="6">มิถุนายน (06)</option>
+                    <option value="7">กรกฎาคม (07)</option>
+                    <option value="8">สิงหาคม (08 - เริ่มฤดูน้ำหลาก)</option>
+                    <option value="9" selected>กันยายน (09 - พีคน้ำมูล)</option>
+                    <option value="10">ตุลาคม (10 - น้ำท่วมขัง)</option>
+                    <option value="11">พฤศจิกายน (11)</option>
+                    <option value="12">ธันวาคม (12)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- ตัวเลือกช่วงวันที่กำหนดเอง -->
+        <div id="sim_custom_date_group" style="display:none; gap: 10px; margin-bottom: 14px;">
+            <div style="flex: 1;">
+                <label style="display:block; margin-bottom:6px; font-size:12px; color:var(--text-muted);">ตั้งแต่วันที่</label>
+                <input type="date" id="inp_sim_start_date" value="2024-08-01" style="width:100%; padding:10px 12px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:#fff; font-size:13px;">
+            </div>
+            <div style="flex: 1;">
+                <label style="display:block; margin-bottom:6px; font-size:12px; color:var(--text-muted);">ถึงวันที่</label>
+                <input type="date" id="inp_sim_end_date" value="2024-10-31" style="width:100%; padding:10px 12px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:#fff; font-size:13px;">
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button class="modal-btn btn-cancel" onclick="closeSimulationModal()">ยกเลิก</button>
+            <button class="modal-btn btn-confirm" style="background:#a855f7; color:#fff;" onclick="submitSimulation()">🚀 เริ่มทดสอบ</button>
+        </div>
+    </div>
+</div>
+
+<!-- Fullscreen Chart Lightbox Modal -->
+<div class="modal-overlay" id="fullscreenChartModal" style="display:none; z-index:9999; background:rgba(0,0,0,0.88); backdrop-filter:blur(5px);" onclick="closeFullscreenModal(event)">
+    <div style="position:relative; width:95vw; max-width:1400px; max-height:94vh; display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px;" onclick="event.stopPropagation()">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:16px;">📈</span>
+                <span style="font-weight:600; font-size:15px; color:#fff;">แผนภูมิประเมินโมเดลความละเอียดสูง (High Resolution View)</span>
+            </div>
+            <button onclick="closeFullscreenModal()" style="background:#ef4444; border:none; color:#fff; padding:6px 14px; border-radius:6px; cursor:pointer; font-weight:600; font-size:12px;">✕ ปิดหน้าต่าง</button>
+        </div>
+        <div style="overflow:auto; max-height:82vh; text-align:center; background:#0f172a; border-radius:8px; padding:10px;">
+            <img id="modal-full-img" src="" alt="Fullscreen Evaluation Chart" style="max-width:100%; height:auto; display:inline-block; border-radius:6px;" />
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script>
 const csrfToken = '{{ csrf_token }}';
+
+// State สำหรับติดตามคำสั่งที่กำลังทำงาน
+let currentTaskId = null;
+let currentCommandKey = null;
+let currentAbortController = null;
+
+// State สำหรับกราฟการประเมิน
+let currentChartData = null;
+let currentChartView = 'interactive';
+
+function switchChartView(view) {
+    currentChartView = view;
+    const btnInteractive = document.getElementById('btn-chart-mode-interactive');
+    const btnStatic = document.getElementById('btn-chart-mode-static');
+    const plotlyBox = document.getElementById('plotly-chart-box');
+    const staticBox = document.getElementById('static-chart-box');
+    const resetZoomBtn = document.getElementById('btn-reset-zoom');
+
+    if (view === 'interactive') {
+        if (plotlyBox) plotlyBox.style.display = 'block';
+        if (staticBox) staticBox.style.display = 'none';
+        if (btnInteractive) {
+            btnInteractive.style.background = '#7c3aed';
+            btnInteractive.style.color = '#fff';
+        }
+        if (btnStatic) {
+            btnStatic.style.background = 'transparent';
+            btnStatic.style.color = 'var(--text-muted)';
+        }
+        if (resetZoomBtn) resetZoomBtn.style.display = 'inline-flex';
+
+        if (window.Plotly && currentChartData) {
+            Plotly.Plots.resize('plotly-chart-box');
+        }
+    } else {
+        if (plotlyBox) plotlyBox.style.display = 'none';
+        if (staticBox) staticBox.style.display = 'block';
+        if (btnInteractive) {
+            btnInteractive.style.background = 'transparent';
+            btnInteractive.style.color = 'var(--text-muted)';
+        }
+        if (btnStatic) {
+            btnStatic.style.background = '#7c3aed';
+            btnStatic.style.color = '#fff';
+        }
+        if (resetZoomBtn) resetZoomBtn.style.display = 'none';
+    }
+}
+
+function openFullscreenModal() {
+    const chartImg = document.getElementById('eval-chart-img');
+    const modalImg = document.getElementById('modal-full-img');
+    const modal = document.getElementById('fullscreenChartModal');
+    if (chartImg && modalImg && modal) {
+        modalImg.src = chartImg.src;
+        modal.style.display = 'flex';
+    }
+}
+
+function closeFullscreenModal(e) {
+    const modal = document.getElementById('fullscreenChartModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function resetInteractiveZoom() {
+    if (window.Plotly && currentChartData) {
+        Plotly.relayout('plotly-chart-box', {
+            'xaxis.autorange': true,
+            'yaxis.autorange': true
+        });
+    }
+}
+
+function renderPlotlyChart(data) {
+    if (!window.Plotly || !data || !data.timestamps) return;
+
+    // อัปเดตสถิติตัวเลขบนแถบหัวเรื่อง
+    const badgeEl = document.getElementById('chart-summary-badge');
+    const metricsBar = document.getElementById('chart-metrics-bar');
+    if (badgeEl) {
+        badgeEl.textContent = (data.mode_title || data.mode) + ' • ' + (data.total_points || data.timestamps.length) + ' ชม.';
+        badgeEl.style.display = 'inline-block';
+    }
+    if (metricsBar) {
+        const r2El = document.getElementById('metric-r2');
+        const maeEl = document.getElementById('metric-mae');
+        const horizonEl = document.getElementById('metric-horizon');
+        const periodEl = document.getElementById('metric-period');
+        const leadBox = document.getElementById('metric-lead-box');
+        const leadEl = document.getElementById('metric-lead');
+        if (r2El) r2El.textContent = data.r2 !== undefined ? data.r2 : '-';
+        if (maeEl) maeEl.textContent = data.mae !== undefined ? data.mae : '-';
+        if (horizonEl) horizonEl.textContent = data.horizon !== undefined ? data.horizon : '6';
+        if (periodEl) periodEl.textContent = data.period || '-';
+        if (leadBox && leadEl) {
+            if (data.lead_time && data.lead_time.hit_rate !== null && data.lead_time.hit_rate !== undefined) {
+                leadEl.textContent = `${data.lead_time.horizon_hours} ชม. (Hit: ${data.lead_time.hit_rate}%)`;
+                leadBox.style.display = 'block';
+            } else {
+                leadBox.style.display = 'none';
+            }
+        }
+        metricsBar.style.display = 'flex';
+    }
+
+    const numPoints = data.timestamps.length;
+    const showMarkers = numPoints <= 400;
+
+    const traceActual = {
+        x: data.timestamps,
+        y: data.actual,
+        mode: showMarkers ? 'lines+markers' : 'lines',
+        name: 'ระดับน้ำจริง (Actual M.7)',
+        line: { color: '#38bdf8', width: 2.2 },
+        marker: { size: 3.5, color: '#38bdf8' },
+        hovertemplate: '🌊 จริง: %{y:.3f} ม.<extra></extra>'
+    };
+
+    const tracePred = {
+        x: data.timestamps,
+        y: data.predicted,
+        mode: showMarkers ? 'lines+markers' : 'lines',
+        name: `AI ทำนาย (${data.horizon}h ahead)`,
+        line: { color: '#f87171', width: 2, dash: 'dot' },
+        marker: { size: 4.5, symbol: 'x', color: '#f87171' },
+        hovertemplate: '🤖 AI: %{y:.3f} ม.<extra></extra>'
+    };
+
+    const traceCrit = {
+        x: [data.timestamps[0], data.timestamps[data.timestamps.length - 1]],
+        y: [data.crit_threshold, data.crit_threshold],
+        mode: 'lines',
+        name: `ระดับวิกฤต (${data.crit_threshold} ม.)`,
+        line: { color: '#ef4444', width: 1.5, dash: 'dash' },
+        hoverinfo: 'skip'
+    };
+
+    const traceWarn = {
+        x: [data.timestamps[0], data.timestamps[data.timestamps.length - 1]],
+        y: [data.warn_threshold, data.warn_threshold],
+        mode: 'lines',
+        name: `ระดับเตือนภัย (${data.warn_threshold} ม.)`,
+        line: { color: '#f59e0b', width: 1.5, dash: 'dash' },
+        hoverinfo: 'skip'
+    };
+
+    const traces = [traceActual, tracePred, traceCrit, traceWarn];
+
+    const layout = {
+        paper_bgcolor: '#0f172a',
+        plot_bgcolor: '#1e293b',
+        hovermode: 'x unified',
+        hoverlabel: {
+            bgcolor: '#0f172a',
+            bordercolor: '#475569',
+            font: { color: '#f8fafc', size: 12 }
+        },
+        title: {
+            text: `เปรียบเทียบระดับน้ำจริง vs โมเดล AI ทำนาย (${data.period})`,
+            font: { color: '#f8fafc', size: 14 }
+        },
+        xaxis: {
+            title: 'วันและเวลา (คลิกแล้วลากเพื่อซูมเข้า / ดับเบิลคลิกเพื่อคืนค่า)',
+            color: '#94a3b8',
+            gridcolor: '#334155',
+            rangeslider: { visible: true, thickness: 0.12, bgcolor: '#1e293b', bordercolor: '#334155' },
+            type: 'date'
+        },
+        yaxis: {
+            title: 'ระดับน้ำ (ม.รทก.)',
+            color: '#94a3b8',
+            gridcolor: '#334155',
+            autorange: true
+        },
+        legend: {
+            orientation: 'h',
+            y: 1.14,
+            x: 0,
+            font: { color: '#cbd5e1' }
+        },
+        margin: { l: 55, r: 25, t: 65, b: 40 },
+        autosize: true
+    };
+
+    const config = {
+        responsive: true,
+        displayModeBar: true,
+        displaylogo: false,
+        modeBarButtonsToRemove: ['lasso2d', 'select2d']
+    };
+
+    Plotly.newPlot('plotly-chart-box', traces, layout, config);
+}
+
+window.addEventListener('resize', () => {
+    if (window.Plotly && currentChartData && currentChartView === 'interactive') {
+        Plotly.Plots.resize('plotly-chart-box');
+    }
+});
 
 function runCommand(commandKey) {
     if (commandKey === 'import_historical_data') {
         document.getElementById('importModal').style.display = 'flex';
+        return;
+    }
+    if (commandKey === 'simulation') {
+        document.getElementById('simulationModal').style.display = 'flex';
         return;
     }
     executeCommand(commandKey, {});
@@ -272,11 +664,130 @@ function submitImport() {
     executeCommand('import_historical_data', params);
 }
 
+function closeSimulationModal() {
+    document.getElementById('simulationModal').style.display = 'none';
+}
+
+function toggleSimTimeFilter() {
+    const filterType = document.getElementById('inp_sim_time_filter').value;
+    const yearMonthGroup = document.getElementById('sim_year_month_group');
+    const monthBox = document.getElementById('sim_month_box');
+    const customGroup = document.getElementById('sim_custom_date_group');
+
+    if (filterType === 'all') {
+        yearMonthGroup.style.display = 'none';
+        customGroup.style.display = 'none';
+    } else if (filterType === 'year') {
+        yearMonthGroup.style.display = 'flex';
+        monthBox.style.display = 'none';
+        customGroup.style.display = 'none';
+    } else if (filterType === 'month') {
+        yearMonthGroup.style.display = 'flex';
+        monthBox.style.display = 'block';
+        customGroup.style.display = 'none';
+    } else if (filterType === 'custom') {
+        yearMonthGroup.style.display = 'none';
+        customGroup.style.display = 'flex';
+    }
+}
+
+function submitSimulation() {
+    closeSimulationModal();
+    const mode = document.getElementById('inp_sim_mode').value;
+    const timeFilter = document.getElementById('inp_sim_time_filter').value;
+
+    const params = {
+        mode: mode,
+        time_filter: timeFilter
+    };
+
+    if (timeFilter === 'year') {
+        params.sim_year = document.getElementById('inp_sim_year').value;
+    } else if (timeFilter === 'month') {
+        params.sim_year = document.getElementById('inp_sim_year').value;
+        params.sim_month = document.getElementById('inp_sim_month').value;
+    } else if (timeFilter === 'custom') {
+        params.sim_start_date = document.getElementById('inp_sim_start_date').value;
+        params.sim_end_date = document.getElementById('inp_sim_end_date').value;
+    }
+
+    executeCommand('simulation', params);
+}
+
+function cancelCurrentCommand() {
+    if (!currentCommandKey && !currentTaskId) return;
+
+    const cancelBtn = document.getElementById('btn-cancel-cmd');
+    const statusEl = document.getElementById('cmd-status');
+    const outputEl = document.getElementById('cmd-output');
+
+    if (cancelBtn) {
+        cancelBtn.disabled = true;
+        cancelBtn.innerHTML = '<span class="spinner">⟳</span> กำลังยกเลิก...';
+    }
+
+    // 1. ส่งคำขอยกเลิกไปยัง Backend เพื่อ kill process ทันที
+    const cancelParams = new URLSearchParams({
+        command: currentCommandKey || '',
+        task_id: currentTaskId || ''
+    });
+
+    fetch('{% url "admin_cancel_command" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken,
+        },
+        body: cancelParams,
+    })
+    .then(r => r.json())
+    .then(res => {
+        console.log('Cancel response:', res);
+    })
+    .catch(err => {
+        console.error('Cancel request error:', err);
+    });
+
+    // 2. ยกเลิก Request ที่กำลังรออยู่ฝั่ง Frontend
+    if (currentAbortController) {
+        currentAbortController.abort();
+    }
+
+    // 3. ปรับ UI เป็นสถานะยกเลิก
+    statusEl.className = 'output-status error';
+    statusEl.innerHTML = '<span>⏹</span> ยกเลิกแล้ว';
+    const currentText = outputEl.textContent ? outputEl.textContent + '\n\n' : '';
+    outputEl.textContent = (currentText + '🛑 ได้รับคำขอยกเลิก — ระบบได้ส่งสัญญาณยุติการทำงานของ Process เรียบร้อยแล้ว').trim();
+
+    if (cancelBtn) cancelBtn.style.display = 'none';
+
+    // คืนค่าปุ่มรันคำสั่งทั้งหมด
+    document.querySelectorAll('.btn-run').forEach(btn => {
+        btn.disabled = false;
+        btn.innerHTML = '▶ รันคำสั่ง';
+    });
+
+    currentTaskId = null;
+    currentCommandKey = null;
+    currentAbortController = null;
+}
+
 function executeCommand(commandKey, extraParams) {
     const statusEl   = document.getElementById('cmd-status');
     const outputEl   = document.getElementById('cmd-output');
     const placeholder = document.getElementById('output-placeholder');
     const labelEl    = document.getElementById('running-cmd-label');
+    const chartContainer = document.getElementById('chart-container');
+    const chartImg = document.getElementById('eval-chart-img');
+    const cancelBtn = document.getElementById('btn-cancel-cmd');
+
+    // สร้าง Task ID และ Controller สำหรับรอบนี้
+    currentTaskId = 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    currentCommandKey = commandKey;
+    currentAbortController = new AbortController();
+
+    // ซ่อนกราฟเดิมระหว่างรันใหม่
+    if (chartContainer) chartContainer.style.display = 'none';
 
     // Disable all buttons
     document.querySelectorAll('.btn-run').forEach(btn => {
@@ -286,15 +797,25 @@ function executeCommand(commandKey, extraParams) {
         }
     });
 
+    // แสดงปุ่มยกเลิกคำสั่ง
+    if (cancelBtn) {
+        cancelBtn.style.display = 'inline-flex';
+        cancelBtn.disabled = false;
+        cancelBtn.innerHTML = '⏹ ยกเลิกคำสั่ง';
+    }
+
     // Update status UI
     statusEl.className = 'output-status running';
     statusEl.innerHTML = '<span class="spinner">⟳</span> กำลังทำงาน...';
     labelEl.textContent = `manage.py ${commandKey}`;
     placeholder.style.display = 'none';
     outputEl.style.display = 'block';
-    outputEl.textContent = '';
+    outputEl.textContent = '⏳ เริ่มประมวลผลคำสั่ง ' + commandKey + '... (สามารถกด "⏹ ยกเลิกคำสั่ง" ได้ตลอดเวลา)';
 
-    let bodyParams = new URLSearchParams({ command: commandKey });
+    let bodyParams = new URLSearchParams({
+        command: commandKey,
+        task_id: currentTaskId
+    });
     for (const [key, value] of Object.entries(extraParams)) {
         bodyParams.append(key, value);
     }
@@ -306,30 +827,59 @@ function executeCommand(commandKey, extraParams) {
             'X-CSRFToken': csrfToken,
         },
         body: bodyParams,
+        signal: currentAbortController.signal
     })
     .then(r => r.json())
     .then(data => {
         outputEl.textContent = data.output || '(ไม่มี output)';
-        if (data.success) {
+        if (data.cancelled) {
+            statusEl.className = 'output-status error';
+            statusEl.innerHTML = '<span>⏹</span> ยกเลิกแล้ว';
+        } else if (data.success) {
             statusEl.className = 'output-status success';
             statusEl.innerHTML = '<span>✓</span> สำเร็จ';
+
+            // แสดงกราฟและการประเมินผลหากมีผลลัพธ์
+            if (data.chart_url && chartContainer) {
+                if (chartImg) chartImg.src = data.chart_url;
+                const modalImg = document.getElementById('modal-full-img');
+                if (modalImg) modalImg.src = data.chart_url;
+                chartContainer.style.display = 'block';
+
+                if (data.chart_data && window.Plotly) {
+                    currentChartData = data.chart_data;
+                    renderPlotlyChart(data.chart_data);
+                    switchChartView('interactive');
+                } else {
+                    switchChartView('static');
+                }
+            }
         } else {
             statusEl.className = 'output-status error';
             statusEl.innerHTML = '<span>✕</span> เกิดข้อผิดพลาด';
         }
     })
     .catch(err => {
-        outputEl.textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + err.message;
-        statusEl.className = 'output-status error';
-        statusEl.innerHTML = '<span>✕</span> Connection Error';
+        if (err.name === 'AbortError') {
+            console.log('Command aborted by user.');
+        } else {
+            outputEl.textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + err.message;
+            statusEl.className = 'output-status error';
+            statusEl.innerHTML = '<span>✕</span> Connection Error';
+        }
     })
     .finally(() => {
+        if (cancelBtn) cancelBtn.style.display = 'none';
+
         // Re-enable all buttons
         document.querySelectorAll('.btn-run').forEach(btn => {
             btn.disabled = false;
-            const key = btn.dataset.command;
             btn.innerHTML = '▶ รันคำสั่ง';
         });
+
+        currentTaskId = null;
+        currentCommandKey = null;
+        currentAbortController = null;
     });
 }
 </script>

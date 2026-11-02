@@ -50,7 +50,7 @@ class WaterStatusHandler:
             if not latest_data:
                 return f"❌ ขออภัย ยังไม่มีข้อมูลของสถานี {station_code} ในระบบครับ"
 
-            thresholds = RiskCalculator.STATION_THRESHOLDS.get(db_station_id, RiskCalculator.STATION_THRESHOLDS['TS16'])
+            thresholds = RiskCalculator.get_thresholds(db_station_id)
             warn_val = thresholds['warn']
             crit_val = thresholds['crit']
 

@@ -1,9 +1,11 @@
 from django.core.management.base import BaseCommand
 import requests
 from pages.models import WaterStations, WaterLevels
+from pages.risk_calculator import RiskCalculator
 from django.utils.timezone import make_aware, get_current_timezone
 from datetime import datetime, timedelta
 import json
+
 
 class Command(BaseCommand):
     help = 'Imports historical water level data from ThaiWater API'
@@ -35,7 +37,7 @@ class Command(BaseCommand):
             info_resp = requests.get(info_url, verify=False, timeout=30)
             info_resp.raise_for_status()
             info_data = info_resp.json()
-            
+
             stations_data = []
             if 'data' in info_data:
                 if isinstance(info_data['data'], list):
@@ -44,18 +46,18 @@ class Command(BaseCommand):
                     stations_data = info_data['data']['waterlevel_data']
             elif isinstance(info_data, list):
                 stations_data = info_data
-                
+
             api_id = None
             for item in stations_data:
                 sc = item.get('station', {}).get('tele_station_oldcode', '')
                 if sc == station_code:
                     api_id = str(item.get('station', {}).get('id', ''))
                     break
-            
+
             if not api_id:
                 self.stdout.write(self.style.ERROR(f"Could not find numeric API ID for station code: {station_code}"))
                 return
-                
+
             self.stdout.write(self.style.SUCCESS(f"Found API ID: {api_id} for {station_code}"))
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Error fetching API ID for {station_code}: {e}"))
@@ -64,7 +66,7 @@ class Command(BaseCommand):
         # Prepare date chunks (Monthly)
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
-        
+
         current_date = start_date
         total_count = 0
         tz = get_current_timezone()
@@ -75,7 +77,7 @@ class Command(BaseCommand):
                 next_month = current_date.replace(year=current_date.year + 1, month=1, day=1)
             else:
                 next_month = current_date.replace(month=current_date.month + 1, day=1)
-            
+
             # Determine chunk end date (either end of month or global end date)
             chunk_end_date = next_month - timedelta(days=1)
             if chunk_end_date > end_date:
@@ -83,7 +85,7 @@ class Command(BaseCommand):
 
             s_str = current_date.strftime('%Y-%m-%d')
             e_str = chunk_end_date.strftime('%Y-%m-%d')
-            
+
             url = f"https://api-v3.thaiwater.net/api/v1/thaiwater30/public/waterlevel_graph?station_type=tele_waterlevel&station_id={api_id}&start_date={s_str}&end_date={e_str}%2023:59"
             self.stdout.write(f"Fetching: {s_str} to {e_str}")
 
@@ -105,18 +107,35 @@ class Command(BaseCommand):
                             dt_naive = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
                         except ValueError:
                             dt_naive = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M')
-                        
+
                         dt_aware = make_aware(dt_naive, timezone=tz)
 
-                        WaterLevels.objects.update_or_create(
-                            station=station,
-                            recorded_at=dt_aware,
-                            defaults={'water_level': value}
-                        )
+                        # คำนวณความเสี่ยงจากระดับน้ำ
+                        risk_level, _ = RiskCalculator.evaluate_flood_risk(float(value), station_id)
+
+                        # บันทึกข้อมูลแบบป้องกันข้อมูลซ้ำซ้อนและคลีนข้อมูลซ้ำเดิม (ถ้ามี)
+                        existing_qs = WaterLevels.objects.filter(station=station, recorded_at=dt_aware)
+                        if existing_qs.exists():
+                            first_record = existing_qs.first()
+                            first_record.water_level = value
+                            first_record.risk_level = risk_level
+                            first_record.data_source = 'ThaiWater Historical API'
+                            first_record.save()
+                            if existing_qs.count() > 1:
+                                existing_qs.exclude(water_level_id=first_record.water_level_id).delete()
+                        else:
+                            WaterLevels.objects.create(
+                                station=station,
+                                recorded_at=dt_aware,
+                                water_level=value,
+                                risk_level=risk_level,
+                                data_source='ThaiWater Historical API'
+                            )
+
                         total_count += 1
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f'Error fetching {s_str}: {e}'))
-            
+
             # Move to next chunk
             current_date = next_month
 

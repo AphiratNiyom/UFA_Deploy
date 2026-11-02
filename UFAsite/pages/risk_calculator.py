@@ -11,6 +11,26 @@ class RiskCalculator:
     }
 
     @staticmethod
+    def get_thresholds(station_id='TS16'):
+        """
+        ดึงค่าเกณฑ์เตือนภัยจากฐานข้อมูล (WaterStations) หากไม่มีให้ใช้ค่า Default
+        """
+        default_cfg = RiskCalculator.STATION_THRESHOLDS.get(
+            station_id, RiskCalculator.STATION_THRESHOLDS.get('TS16', {'warn': 110.00, 'crit': 112.00})
+        )
+        try:
+            from pages.models import WaterStations
+            station = WaterStations.objects.filter(station_id=station_id).first()
+            if station and station.warning_level is not None and station.critical_level is not None:
+                return {
+                    'warn': float(station.warning_level),
+                    'crit': float(station.critical_level)
+                }
+        except Exception:
+            pass
+        return default_cfg
+
+    @staticmethod
     def evaluate_flood_risk(water_level, station_id='TS16'):
         """
         ประเมินความเสี่ยงน้ำท่วมจากระดับน้ำ
@@ -23,10 +43,7 @@ class RiskCalculator:
             tuple: (risk_level_int, risk_status_text)
                    0=ปกติ, 1=เฝ้าระวัง, 2=วิกฤต
         """
-        # ดึงค่าเกณฑ์ของสถานีนั้นๆ (ถ้าไม่มีให้ใช้ค่า Default ของ TS16)
-        thresholds = RiskCalculator.STATION_THRESHOLDS.get(
-            station_id, RiskCalculator.STATION_THRESHOLDS['TS16']
-        )
+        thresholds = RiskCalculator.get_thresholds(station_id)
 
         limit_warning = thresholds['warn']
         limit_critical = thresholds['crit']
@@ -38,3 +55,7 @@ class RiskCalculator:
             return 1, "เฝ้าระวัง"               # Warning
         else:
             return 0, "ปกติ"                    # Normal
+
+
+# Alias สำหรับเรียกใช้ระดับโมดูลและ Unit Test
+evaluate_flood_risk = RiskCalculator.evaluate_flood_risk

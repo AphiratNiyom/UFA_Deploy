@@ -10,7 +10,7 @@ class SubscriptionHandler:
         else:
             if not user.is_active:
                 user.is_active = True
-                user.subscribed_at = timezone.now()
+                user.last_subscribed_at = timezone.now()
                 user.save()
                 return "กลับมาสมัครรับการแจ้งเตือนอีกครั้ง ยินดีต้อนรับ 😊"
             else:

@@ -13,6 +13,17 @@ if hasattr(MySQLdb, 'version_info'):
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load environment variables from .env if present
+for env_candidate in (BASE_DIR / '.env', BASE_DIR.parent / '.env'):
+    if env_candidate.exists():
+        with open(env_candidate, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    k, v = line.split('=', 1)
+                    os.environ.setdefault(k.strip(), v.strip().strip("'\""))
+        break
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -21,11 +32,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-!)du$b&m06=2$pz@7n1uz6ma5)xq)xltdpe#w!)o_-@zr!w9rh')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-#DEBUG = os.environ.get('DEBUG', 'False') == 'True'
-DEBUG = True
+if 'RENDER' in os.environ:
+    DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 't')
+else:
+    DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1', 't')
 
 # อนุญาตให้เข้าถึงจากโดเมนของ Render และ localhost
-ALLOWED_HOSTS = ['ufa-deploy.onrender.com', 'localhost', '127.0.0.1', '*']
+allowed_hosts_str = os.environ.get('ALLOWED_HOSTS', 'ufa-deploy.onrender.com,localhost,127.0.0.1')
+ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_str.split(',') if h.strip()]
+if DEBUG:
+    for local_host in ('localhost', '127.0.0.1', '[::1]', 'testserver'):
+        if local_host not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(local_host)
 
 # Application definition
 
@@ -95,11 +113,11 @@ else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'ubon_flood_alert',
-            'USER': 'root',
-            'PASSWORD': 'Apirat2018',
-            'HOST': '127.0.0.1',
-            'PORT': '3306',   
+            'NAME': os.environ.get('LOCAL_DB_NAME', 'ubon_flood_alert'),
+            'USER': os.environ.get('LOCAL_DB_USER', 'root'),
+            'PASSWORD': os.environ.get('LOCAL_DB_PASSWORD', 'Apirat2018'),
+            'HOST': os.environ.get('LOCAL_DB_HOST', '127.0.0.1'),
+            'PORT': os.environ.get('LOCAL_DB_PORT', '3306'),   
         }
     }
 
@@ -152,8 +170,8 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # LINE BOT CONFIGURATION
-LINE_CHANNEL_ACCESS_TOKEN = os.environ.get('LINE_CHANNEL_ACCESS_TOKEN', 'dX4d0TaVaT+LYdOsf87JxmPVCZwTiFRuF5LLKOiTJlb3xJd726q5vdjchZqfMAdQNVsfuBf/IVL0eLRPcBq1xSAJ/sYuWVvcmrZaS8UKd4dciT9I75juk/W1XLaf6OMDyJLU8RtpONl9YGu7ZIej3gdB04t89/1O/w1cDnyilFU=')
-LINE_CHANNEL_SECRET = os.environ.get('LINE_CHANNEL_SECRET', 'dd13871dbe48900588ea526959bd8525')
+LINE_CHANNEL_ACCESS_TOKEN = os.environ.get('LINE_CHANNEL_ACCESS_TOKEN', '')
+LINE_CHANNEL_SECRET = os.environ.get('LINE_CHANNEL_SECRET', '')
 
 # Security settings for production
 if not DEBUG:

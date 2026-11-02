@@ -6,9 +6,11 @@ tzdata==2025.2
 # Database
 PyMySQL==1.1.1
 cryptography==44.0.0
+cffi==2.0.0
+pycparser==2.23
 dj-database-url==3.1.0
 
-# Data / ML
+# Data Science / Machine Learning
 numpy==2.4.0
 pandas==2.3.3
 scikit-learn==1.8.0
@@ -33,7 +35,7 @@ PyYAML==6.0.3
 Deprecated==1.2.18
 wrapt==1.17.3
 
-# LINE integration
+# LINE Messaging API
 line-bot-sdk==3.19.0
 pydantic==2.11.9
 pydantic_core==2.33.2
@@ -41,13 +43,13 @@ typing_extensions==4.15.0
 typing-inspection==0.4.1
 annotated-types==0.7.0
 
-# Images
+# Image Processing
 pillow==12.1.0
 
 # Tunneling (optional)
 pyngrok==7.5.0
 
-# aiohttp dependencies (used by line-bot-sdk)
+# Async HTTP (used by line-bot-sdk)
 aiohttp==3.12.15
 aiohappyeyeballs==2.6.1
 aiosignal==1.4.0
@@ -57,7 +59,7 @@ multidict==6.6.4
 propcache==0.3.2
 yarl==1.20.1
 
-# Plotting (if used in notebooks/scripts)
+# Matplotlib & Plotting
 matplotlib==3.10.8
 contourpy==1.3.3
 cycler==0.12.1
@@ -68,6 +70,6 @@ pyparsing==3.3.1
 python-dateutil==2.9.0.post0
 six==1.17.0
 
-# Production
-gunicorn
-whitenoise
+# Production Web Server & Static Files
+gunicorn==26.0.0
+whitenoise==6.11.0
